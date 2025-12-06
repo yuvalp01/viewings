@@ -17,7 +17,7 @@
 ## Backend Stack
 
 - **Architecture**: Next.js API Routes (full-stack monorepo)
-- **ORM**: Prisma version 7.1.0
+- **ORM**: Prisma version 7.1.0 (note breaking changes from v6)
 - **Database**: Azure SQL Database (SQL Server compatible) - *Already exists*
 
 ---
