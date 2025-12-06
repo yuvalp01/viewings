@@ -1,0 +1,32 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+}
+
+model Apartment {
+  id                        Int       @id @default(autoincrement())
+  address                   String?   @db.NVarChar(255)
+  status                    Int
+  purchaseDate              DateTime? @map("PurchaseDate") @db.DateTime2
+  floor                     Int?
+  size                      Int?
+  door                      String?   @db.NVarChar(50)
+  investmentType            Int       @map("InvestmentType")
+  comments                  String?   @db.NVarChar(255)
+  managementFeePercentage   Decimal   @map("ManagementFeePercentage") @db.Decimal(18, 2)
+  price                     Decimal?  @db.Decimal(18, 2)
+  totalInvestment           Decimal?  @map("TotalInvestment") @db.Decimal(18, 2)
+  isUnderDiscussion         Boolean   @default(false) @map("IsUnderDiscussion")
+  bedrooms                  Decimal?  @db.Decimal(18, 2)
+  isDeleted                 Boolean   @default(false) @map("IsDeleted")
+  stageId                   Int?      @map("StageId")
+
+  @@map("apartments")
+}
+
