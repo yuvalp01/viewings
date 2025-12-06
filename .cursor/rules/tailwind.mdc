@@ -1,0 +1,13 @@
+---
+description: Tailwind CSS utility-first styling guidelines
+alwaysApply: false
+globs: ["**/*.{tsx,jsx}", "app/**/*.{ts,tsx}"]
+---
+
+# Tailwind CSS Rules
+- Use utility classes directly in JSX
+- Prefer Tailwind utilities over custom CSS
+- Use responsive prefixes (sm:, md:, lg:, xl:, 2xl:)
+- Extract repeated patterns into components, not CSS classes
+- Use Tailwind's design tokens (colors, spacing, etc.)
+- Keep responsive design mobile-first

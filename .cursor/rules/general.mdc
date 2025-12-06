@@ -1,0 +1,15 @@
+---
+description: General coding principles and best practices
+alwaysApply: true
+---
+
+# General Principles
+- Write clean, maintainable, and well-documented code
+- Follow TypeScript best practices - use types, avoid `any`
+- Prefer functional components and hooks
+- Use async/await over promises
+- Handle errors gracefully with proper error messages
+- Use meaningful variable and function names
+- Keep functions small and focused
+- Use early returns to reduce nesting
+- Prefer const over let, avoid var

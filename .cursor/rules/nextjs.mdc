@@ -1,0 +1,16 @@
+---
+description: Next.js App Router conventions and best practices
+alwaysApply: false
+globs: ["app/**/*.{ts,tsx}", "pages/**/*.{ts,tsx}"]
+---
+
+# Next.js Specific Rules
+- Use App Router conventions (app directory structure)
+- Use Server Components by default, Client Components only when needed ('use client')
+- API routes should be in `app/api/` directory
+- Use Next.js built-in components: `next/link`, `next/image`, `next/navigation`
+- Prefer Server Actions for mutations when possible
+- Use Route Handlers (route.ts) for REST APIs
+- Use Next.js Image component for images
+- Implement proper loading states
+- Use Next.js caching strategies appropriately

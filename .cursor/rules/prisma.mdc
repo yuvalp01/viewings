@@ -1,0 +1,15 @@
+---
+description: Prisma ORM and database best practices
+alwaysApply: false
+globs: ["prisma/**/*", "**/lib/prisma.ts", "app/api/**/*.ts"]
+---
+
+# Prisma Rules
+- Always use Prisma Client from `lib/prisma.ts` singleton
+- Use transactions for multi-step operations
+- Handle Prisma errors appropriately (P2002 for unique constraint, etc.)
+- Use `select` or `include` to fetch only needed fields
+- Use `findUnique` with unique fields, `findFirst` for non-unique queries
+- Optimize database queries (avoid N+1 problems)
+- Use connection pooling (Prisma handles this)
+- Be mindful of Azure SQL Database connection limits

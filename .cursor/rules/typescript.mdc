@@ -1,0 +1,13 @@
+---
+description: TypeScript best practices and type safety
+alwaysApply: false
+globs: ["**/*.{ts,tsx}"]
+---
+
+# TypeScript Rules
+- Always define types/interfaces for props, API responses, and data structures
+- Use `interface` for object shapes, `type` for unions/intersections
+- Avoid `any` - use `unknown` if type is truly unknown
+- Use Zod schemas for runtime validation
+- Export types from dedicated files when reused
+- Keep TypeScript strict mode enabled

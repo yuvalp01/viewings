@@ -1,0 +1,15 @@
+---
+description: API route conventions and error handling
+alwaysApply: false
+globs: ["app/api/**/*.ts"]
+---
+
+# API Route Rules
+- Use proper HTTP methods (GET, POST, PUT, DELETE, PATCH)
+- Return appropriate status codes (200, 201, 400, 404, 500)
+- Validate input with Zod schemas
+- Handle errors and return consistent error format: `{ error: string }`
+- Use NextResponse.json() for responses
+- Use try-catch blocks for async operations
+- Log errors appropriately (console.error in dev)
+- Don't expose sensitive information in error responses
