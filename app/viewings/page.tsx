@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import Button from "@/app/components/Button";
 import { PlusIcon, HomeIcon, ExternalLinkIcon } from "@/app/components/icons";
+import RefreshButton from "./components/RefreshButton";
 
-export default async function ApartmentViewingsPage() {
-  const apartmentViewings = await prisma.apartmentViewing.findMany({
+
+export default async function ViewingsPage() {
+  const viewings = await prisma.viewing.findMany({
     orderBy: {
       id: "desc",
     },
@@ -23,17 +25,18 @@ export default async function ApartmentViewingsPage() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
-              Apartment Viewings
+              Viewings
             </h1>
             <p className="mt-2 text-lg text-zinc-600 dark:text-zinc-400">
-              View all apartment viewing records
+              View all viewing records
             </p>
           </div>
           <div className="flex gap-4">
+            <RefreshButton />
             <Button
-              href="/apartment-viewings/new"
+              href="/viewings/new"
               icon={<PlusIcon className="h-5 w-5" />}
-              tooltip="Create a new apartment viewing"
+              tooltip="Create a new viewing"
             />
             <Button
               href="/"
@@ -44,15 +47,15 @@ export default async function ApartmentViewingsPage() {
           </div>
         </div>
 
-        {apartmentViewings.length === 0 ? (
+        {viewings.length === 0 ? (
           <div className="rounded-lg border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
             <p className="text-lg text-zinc-600 dark:text-zinc-400">
-              No apartment viewings found.
+              No viewings found.
             </p>
             <Button
-              href="/apartment-viewings/new"
+              href="/viewings/new"
               icon={<PlusIcon className="h-5 w-5" />}
-              tooltip="Create your first apartment viewing"
+              tooltip="Create your first viewing"
               className="mt-4"
             />
           </div>
@@ -92,7 +95,7 @@ export default async function ApartmentViewingsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200 bg-white dark:divide-zinc-800 dark:bg-zinc-900">
-                  {apartmentViewings.map((viewing) => (
+                  {viewings.map((viewing) => (
                     <tr
                       key={viewing.id}
                       className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
@@ -133,7 +136,7 @@ export default async function ApartmentViewingsPage() {
                         {viewing.size ? `${viewing.size.toNumber()} m²` : "-"}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                        {viewing.priceAsked ? `€${viewing.priceAsked.toNumber().toLocaleString()}` : "-"}
+                        {viewing.price ? `€${viewing.price.toNumber().toLocaleString()}` : "-"}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-600 dark:text-zinc-400">
                         {viewing.bedrooms ? viewing.bedrooms.toNumber() : "-"}
@@ -164,8 +167,8 @@ export default async function ApartmentViewingsPage() {
         )}
 
         <div className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
-          Showing {apartmentViewings.length} viewing
-          {apartmentViewings.length !== 1 ? "s" : ""}
+          Showing {viewings.length} viewing
+          {viewings.length !== 1 ? "s" : ""}
         </div>
       </main>
     </div>

@@ -12,13 +12,13 @@ VALUES
 (2, 'Good',     'Good quality'),  
 (3, 'Superb',   'Excellent quality or finish');
 
-CREATE TABLE dbo.apartmentViewings (  
+CREATE TABLE dbo.viewings (  
    Id                          INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
 
    \-- Basic \- all details I can add before the visit (from the ad)  
    Address                     NVARCHAR(MAX)   NULL,  
    Size                        DECIMAL(9,2)    NULL,  
-   PriceAsked                  DECIMAL(18,2)   NULL,  
+   Price                  DECIMAL(18,2)   NULL,  
    Bedrooms                    DECIMAL(3,1)    NULL,  
    Floor                       DECIMAL(4,1)    NULL,  
    IsElevator                  BIT             NOT NULL DEFAULT (0),  
@@ -57,24 +57,24 @@ CREATE TABLE dbo.apartmentViewings (
    IsDeleted                   BIT             NOT NULL DEFAULT (0)  
 );
 
-CREATE TABLE auth.apartmentViewingsVisibility (  
-   ApartmentViewingId INT       NOT NULL,  
+CREATE TABLE auth.viewingsVisibility (  
+   ViewingId INT       NOT NULL,  
    StakeholderId      INT       NOT NULL,  
    CreatedAt          DATETIME2 NOT NULL DEFAULT SYSDATETIME(),  
-   CONSTRAINT PK\_apartmentViewingsVisibility PRIMARY KEY (ApartmentViewingId, StakeholderId)  
+   CONSTRAINT PK\_viewingsVisibility PRIMARY KEY (ViewingId, StakeholderId)  
 );
 
-CREATE TABLE dbo.apartmentViewingCostItems (  
+CREATE TABLE dbo.viewingCostItems (  
    Id                 INT IDENTITY(1,1) PRIMARY KEY,  
-   ApartmentViewingId INT NOT NULL,  
+   ViewingId INT NOT NULL,  
    AccountId          INT NOT NULL,               \-- FK → accounts table  
    Description        NVARCHAR(MAX) NOT NULL,  
    Amount             DECIMAL(18,2) NOT NULL,     \-- positive \= expense, negative \= saving  
    CreatedAt          DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
 
    CONSTRAINT FK\_ViewingCostItems\_Viewing  
-       FOREIGN KEY (ApartmentViewingId)  
-       REFERENCES dbo.apartmentViewings(Id),
+       FOREIGN KEY (ViewingId)  
+       REFERENCES dbo.viewings(Id),
 
    CONSTRAINT FK\_ViewingCostItems\_Account  
        FOREIGN KEY (AccountId)  
@@ -83,95 +83,95 @@ CREATE TABLE dbo.apartmentViewingCostItems (
 
 \-- FKs
 
-\-- apartmentViewings  
-ALTER TABLE dbo.apartmentViewings  
+\-- viewings  
+ALTER TABLE dbo.viewings  
 ADD CONSTRAINT FK\_Viewings\_Apartment  
 FOREIGN KEY (ApartmentId)  
 REFERENCES dbo.apartments(Id);
 
 \-- Agent  
-ALTER TABLE dbo.apartmentViewings  
+ALTER TABLE dbo.viewings  
 ADD CONSTRAINT FK\_Viewings\_Agent  
 FOREIGN KEY (AgentStakeholderId)  
 REFERENCES dbo.stakeholders(Id);
 
 \-- ViewedBy (person who physically visited)  
-ALTER TABLE dbo.apartmentViewings  
+ALTER TABLE dbo.viewings  
 ADD CONSTRAINT FK\_Viewings\_ViewedBy  
 FOREIGN KEY (ViewedByStakeholderId)  
 REFERENCES dbo.stakeholders(Id);
 
 \-- FK to lkp\_qualityLevel
 
-ALTER TABLE dbo.apartmentViewings  
+ALTER TABLE dbo.viewings  
 ADD CONSTRAINT FK\_Viewings\_AluminumWindowsLevel  
 FOREIGN KEY (AluminumWindowsLevel)  
 REFERENCES dbo.lkp\_qualityLevel(Id);
 
-ALTER TABLE dbo.apartmentViewings  
+ALTER TABLE dbo.viewings  
 ADD CONSTRAINT FK\_Viewings\_RenovationKitchenLevel  
 FOREIGN KEY (RenovationKitchenLevel)  
 REFERENCES dbo.lkp\_qualityLevel(Id);
 
-ALTER TABLE dbo.apartmentViewings  
+ALTER TABLE dbo.viewings  
 ADD CONSTRAINT FK\_Viewings\_RenovationBathroomLevel  
 FOREIGN KEY (RenovationBathroomLevel)  
 REFERENCES dbo.lkp\_qualityLevel(Id);
 
-ALTER TABLE dbo.apartmentViewings  
+ALTER TABLE dbo.viewings  
 ADD CONSTRAINT FK\_Viewings\_RenovationLevel  
 FOREIGN KEY (RenovationLevel)  
 REFERENCES dbo.lkp\_qualityLevel(Id);
 
-ALTER TABLE dbo.apartmentViewings  
+ALTER TABLE dbo.viewings  
 ADD CONSTRAINT FK\_Viewings\_ViewLevel  
 FOREIGN KEY (ViewLevel)  
 REFERENCES dbo.lkp\_qualityLevel(Id);
 
-ALTER TABLE dbo.apartmentViewings  
+ALTER TABLE dbo.viewings  
 ADD CONSTRAINT FK\_Viewings\_BalconyLevel  
 FOREIGN KEY (BalconyLevel)  
 REFERENCES dbo.lkp\_qualityLevel(Id);
 
-ALTER TABLE dbo.apartmentViewings  
+ALTER TABLE dbo.viewings  
 ADD CONSTRAINT FK\_Viewings\_BuildingLobbyLevel  
 FOREIGN KEY (BuildingLobbyLevel)  
 REFERENCES dbo.lkp\_qualityLevel(Id);
 
-ALTER TABLE dbo.apartmentViewings  
+ALTER TABLE dbo.viewings  
 ADD CONSTRAINT FK\_Viewings\_BuildingMaintenanceLevel  
 FOREIGN KEY (BuildingMaintenanceLevel)  
 REFERENCES dbo.lkp\_qualityLevel(Id);
 
-ALTER TABLE dbo.apartmentViewings  
+ALTER TABLE dbo.viewings  
 ADD CONSTRAINT FK\_Viewings\_MetroStationDistanceLevel  
 FOREIGN KEY (MetroStationDistanceLevel)  
 REFERENCES dbo.lkp\_qualityLevel(Id);
 
-\-- For auth.apartmentViewingsVisibility
+\-- For auth.viewingsVisibility
 
-ALTER TABLE auth.apartmentViewingsVisibility  
+ALTER TABLE auth.viewingsVisibility  
 ADD CONSTRAINT FK\_ViewingVisibility\_Viewing  
-FOREIGN KEY (ApartmentViewingId)  
-REFERENCES dbo.apartmentViewings(Id);
+FOREIGN KEY (ViewingId)  
+REFERENCES dbo.viewings(Id);
 
-ALTER TABLE auth.apartmentViewingsVisibility  
+ALTER TABLE auth.viewingsVisibility  
 ADD CONSTRAINT FK\_ViewingVisibility\_Stakeholder  
 FOREIGN KEY (StakeholderId)  
 REFERENCES dbo.stakeholders(Id);
 
 CREATE INDEX IX\_Viewings\_ApartmentId  
-ON dbo.apartmentViewings (ApartmentId);
+ON dbo.viewings (ApartmentId);
 
 CREATE INDEX IX\_Viewings\_AgentStakeholderId  
-ON dbo.apartmentViewings (AgentStakeholderId);
+ON dbo.viewings (AgentStakeholderId);
 
 CREATE INDEX IX\_Viewings\_ViewedByStakeholderId  
-ON dbo.apartmentViewings (ViewedByStakeholderId);
+ON dbo.viewings (ViewedByStakeholderId);
 
 CREATE INDEX IX\_Viewings\_ViewingDate  
-ON dbo.apartmentViewings (ViewingDate);
+ON dbo.viewings (ViewingDate);
 
 CREATE INDEX IX\_ViewingVisibility\_StakeholderId  
-ON auth.apartmentViewingsVisibility (StakeholderId);
+ON auth.viewingsVisibility (StakeholderId);
 

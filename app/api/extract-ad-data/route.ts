@@ -11,7 +11,7 @@ const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
 // Response schema
 const ExtractionResponseSchema = z.object({
   size: z.number().nullable().optional(),
-  priceAsked: z.number().nullable().optional(),
+  price: z.number().nullable().optional(),
   bedrooms: z.number().nullable().optional(),
   floor: z.number().nullable().optional(),
   constructionYear: z.number().nullable().optional(),
@@ -105,7 +105,7 @@ async function extractWithAI(content: string): Promise<ExtractionResponse> {
   const prompt = `Extract apartment details from this real estate ad content.
 Return ONLY valid JSON with these fields:
 - size (number in sqm or null)
-- priceAsked (number or null)
+- price (number or null)
 - bedrooms (number or null)
 - floor (number or null)
 - constructionYear (number or null)

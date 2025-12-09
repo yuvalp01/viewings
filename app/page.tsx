@@ -44,9 +44,9 @@ export default function Home() {
             className="h-12 w-12"
           />
           <Button
-            href="/apartment-viewings"
+            href="/viewings"
             icon={<HomeIcon className="h-5 w-5" />}
-            tooltip="View all apartment viewings"
+            tooltip="View all viewings"
             className="h-12 w-12"
           />
           <a

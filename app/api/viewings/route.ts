@@ -20,9 +20,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (typeof body.priceAsked !== "number" || body.priceAsked <= 0) {
+    if (typeof body.price !== "number" || body.price <= 0) {
       return NextResponse.json(
-        { error: "Price asked must be a positive number" },
+        { error: "Price must be a positive number" },
         { status: 400 }
       );
     }
@@ -118,12 +118,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create apartment viewing record
-    const apartmentViewing = await prisma.apartmentViewing.create({
+    // Create viewing record
+    const viewing = await prisma.viewing.create({
       data: {
         address: body.address.trim(),
         size: body.size,
-        priceAsked: body.priceAsked,
+        price: body.price,
         bedrooms: body.bedrooms,
         floor: body.floor ?? null,
         isElevator: body.isElevator ?? false,
@@ -136,13 +136,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        message: "Apartment viewing created successfully",
-        id: apartmentViewing.id,
+        message: "Viewing created successfully",
+        id: viewing.id,
       },
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error creating apartment viewing:", error);
+    console.error("Error creating viewing:", error);
 
     // Handle Prisma errors
     if (error && typeof error === "object" && "code" in error) {
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: "Failed to create apartment viewing" },
+      { error: "Failed to create viewing" },
       { status: 500 }
     );
   }

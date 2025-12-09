@@ -37,17 +37,17 @@ model Stakeholder {
   name      String  @db.NVarChar(255)
   isDeleted Boolean @default(false) @map("IsDeleted")
 
-  apartmentViewingsAsAgent ApartmentViewing[] @relation("AgentStakeholder")
+  viewingsAsAgent Viewing[] @relation("AgentStakeholder")
 
   @@schema("dbo")
   @@map("stakeholders")
 }
 
-model ApartmentViewing {
+model Viewing {
   id                Int       @id @default(autoincrement())
   address           String?   @map("Address") @db.NVarChar(Max)
   size              Decimal?  @map("Size") @db.Decimal(9, 2)
-  priceAsked        Decimal?  @map("PriceAsked") @db.Decimal(18, 2)
+  price             Decimal?  @map("Price") @db.Decimal(18, 2)
   bedrooms          Decimal?  @map("Bedrooms") @db.Decimal(3, 1)
   floor             Decimal?  @map("Floor") @db.Decimal(4, 1)
   isElevator        Boolean   @default(false) @map("IsElevator")
@@ -60,6 +60,6 @@ model ApartmentViewing {
   agentStakeholder Stakeholder? @relation("AgentStakeholder", fields: [agentStakeholderId], references: [id])
 
   @@schema("dbo")
-  @@map("apartmentViewings")
+  @@map("viewings")
 }
 

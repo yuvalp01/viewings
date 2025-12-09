@@ -1,10 +1,10 @@
-# **Apartment Viewings – Full Business Improvement Plan**
+## Viewings – Full Business Improvement Plan
 
-This document explains how to fully use the new DB structures to improve the apartment‑viewing workflow, reduce mistakes, and make more accurate investment decisions. All stages are integrated with the new tables: `apartmentViewings`, `apartmentViewingCostItems`, and `auth.apartmentViewingsVisibility`.
+This document explains how to fully use the new DB structures to improve the viewing workflow, reduce mistakes, and make more accurate investment decisions. All stages are integrated with the new tables: `viewings`, `viewingCostItems`, and `auth.viewingsVisibility`.
 
 ---
 
-# **⭐ Stage 1 — Remote Analysis (Before Visiting)**
+### ⭐ Stage 1 — Remote Analysis (Before Visiting)
 
 When receiving ad links from agents, record only the basic information.
 
@@ -14,7 +14,7 @@ When receiving ad links from agents, record only the basic information.
 
 * Size
 
-* PriceAsked
+* Price
 
 * Bedrooms
 
@@ -30,7 +30,7 @@ When receiving ad links from agents, record only the basic information.
 
 ### **System behavior:**
 
-* Creates a new apartmentViewing record in “Options to Consider”.
+* Creates a new viewing record in “Options to Consider”.
 
 * No visit scheduled yet.
 
@@ -40,11 +40,11 @@ When receiving ad links from agents, record only the basic information.
 
 * You can compare ads side‑by‑side.
 
-* Helps decide which apartments deserve a visit.
+* Helps decide which apartments deserve a viewing.
 
 ---
 
-# **⭐ Stage 2 — Decision to Visit & Scheduling**
+### ⭐ Stage 2 — Decision to Visit & Scheduling
 
 Once an apartment is approved for a visit.
 
@@ -70,7 +70,7 @@ Once an apartment is approved for a visit.
 
 ---
 
-# **⭐ Stage 3 — During the Visit (On-Site Assessment)**
+### ⭐ Stage 3 — During the Visit (On-Site Assessment)
 
 Capture all details observable only on-site.
 
@@ -112,7 +112,7 @@ Capture all details observable only on-site.
 
 ---
 
-# **⭐ Stage 4 — After the Visit (Office Work)**
+### ⭐ Stage 4 — After the Visit (Office Work)
 
 Add information requiring office analysis.
 
@@ -138,15 +138,15 @@ Add information requiring office analysis.
 
 ### **Business benefits:**
 
-* Complete dataset for each apartment.
+* Complete dataset for each viewing.
 
 * All photos, maps, and notes are centralized.
 
 ---
 
-# **⭐ Stage 5 — Expected Additional Expenses (Critical for Comparison)**
+### ⭐ Stage 5 — Expected Additional Expenses (Critical for Comparison)
 
-Use `apartmentViewingCostItems` to estimate real cost differences between apartments.
+Use `viewingCostItems` to estimate real cost differences between the potential apartments.
 
 ### **Table fields:**
 
@@ -180,13 +180,13 @@ Use `apartmentViewingCostItems` to estimate real cost differences between apartm
 
 ---
 
-# **⭐ Stage 6 — Stakeholder Visibility Assignment**
+### ⭐ Stage 6 — Stakeholder Visibility Assignment
 
 Control who can access each viewing.
 
-### **Table: `auth.apartmentViewingsVisibility`**
+### **Table: `auth.viewingsVisibility`**
 
-* ApartmentViewingId
+* ViewingId
 
 * StakeholderId
 
@@ -214,7 +214,7 @@ Control who can access each viewing.
 
 * Size
 
-* PriceAsked
+* Price
 
 * Bedrooms
 
@@ -272,7 +272,7 @@ Control who can access each viewing.
 
 ### **Additional expenses**
 
-* Add rows to apartmentViewingCostItems
+* Add rows to viewingCostItems
 
 ### **Visibility**
 
@@ -290,7 +290,7 @@ Control who can access each viewing.
 
 * Accurate cost & ROI estimation.
 
-* Smart comparison between apartments.
+* Smart comparison between viewings.
 
 * Professional process for investors.
 

@@ -16,14 +16,14 @@ interface Stakeholder {
   name: string;
 }
 
-interface ApartmentViewingFormProps {
+interface ViewingFormProps {
   stakeholders: Stakeholder[];
 }
 
 interface FormData {
   address: string;
   size: string;
-  priceAsked: string;
+  price: string;
   bedrooms: string;
   floor: string;
   isElevator: boolean;
@@ -36,7 +36,7 @@ interface FormData {
 interface FormErrors {
   address?: string;
   size?: string;
-  priceAsked?: string;
+  price?: string;
   bedrooms?: string;
   floor?: string;
   constructionYear?: string;
@@ -44,9 +44,9 @@ interface FormErrors {
   linkAddress?: string;
 }
 
-export default function ApartmentViewingForm({
+export default function ViewingForm({
   stakeholders,
-}: ApartmentViewingFormProps) {
+}: ViewingFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -59,7 +59,7 @@ export default function ApartmentViewingForm({
   const [formData, setFormData] = useState<FormData>({
     address: "",
     size: "",
-    priceAsked: "",
+    price: "",
     bedrooms: "",
     floor: "",
     isElevator: false,
@@ -136,9 +136,9 @@ export default function ApartmentViewingForm({
         setFormData((prev) => ({
           ...prev,
           size: extracted.size ? extracted.size.toString() : prev.size,
-          priceAsked: extracted.priceAsked
-            ? extracted.priceAsked.toString()
-            : prev.priceAsked,
+          price: extracted.price
+            ? extracted.price.toString()
+            : prev.price,
           bedrooms: extracted.bedrooms
             ? extracted.bedrooms.toString()
             : prev.bedrooms,
@@ -153,7 +153,7 @@ export default function ApartmentViewingForm({
         setErrors((prev) => {
           const newErrors = { ...prev };
           if (extracted.size) delete newErrors.size;
-          if (extracted.priceAsked) delete newErrors.priceAsked;
+          if (extracted.price) delete newErrors.price;
           if (extracted.bedrooms) delete newErrors.bedrooms;
           if (extracted.floor) delete newErrors.floor;
           if (extracted.constructionYear) delete newErrors.constructionYear;
@@ -188,12 +188,12 @@ export default function ApartmentViewingForm({
       }
     }
 
-    if (!formData.priceAsked.trim()) {
-      newErrors.priceAsked = "Price asked is required";
+    if (!formData.price.trim()) {
+      newErrors.price = "Price is required";
     } else {
-      const priceNum = parseFloat(formData.priceAsked);
+      const priceNum = parseFloat(formData.price);
       if (isNaN(priceNum) || priceNum <= 0) {
-        newErrors.priceAsked = "Price must be a positive number";
+        newErrors.price = "Price must be a positive number";
       }
     }
 
@@ -253,7 +253,7 @@ export default function ApartmentViewingForm({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/apartment-viewings", {
+      const response = await fetch("/api/viewings", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -261,7 +261,7 @@ export default function ApartmentViewingForm({
         body: JSON.stringify({
           address: formData.address.trim(),
           size: parseFloat(formData.size),
-          priceAsked: parseFloat(formData.priceAsked),
+          price: parseFloat(formData.price),
           bedrooms: parseFloat(formData.bedrooms),
           floor: formData.floor.trim() ? parseFloat(formData.floor) : null,
           isElevator: formData.isElevator,
@@ -279,14 +279,14 @@ export default function ApartmentViewingForm({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create apartment viewing");
+        throw new Error(data.error || "Failed to create viewing");
       }
 
       setSuccess(true);
       setFormData({
         address: "",
         size: "",
-        priceAsked: "",
+        price: "",
         bedrooms: "",
         floor: "",
         isElevator: false,
@@ -299,7 +299,7 @@ export default function ApartmentViewingForm({
 
       // Redirect to list page after 1.5 seconds
       setTimeout(() => {
-        router.push("/apartment-viewings");
+        router.push("/viewings");
       }, 1500);
     } catch (err) {
       setError(
@@ -344,7 +344,7 @@ export default function ApartmentViewingForm({
       {success && (
         <div className="rounded-lg bg-green-50 border border-green-200 p-4 dark:bg-green-900/20 dark:border-green-800">
           <p className="text-sm font-medium text-green-800 dark:text-green-200">
-            Apartment viewing created successfully! Redirecting to viewings list...
+            Viewing created successfully! Redirecting to viewings list...
           </p>
         </div>
       )}
@@ -400,7 +400,7 @@ export default function ApartmentViewingForm({
               onClick={handleExtractAdData}
               disabled={!formData.linkAd.trim() || !isValidUrl(formData.linkAd.trim()) || isExtracting}
               className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-              title="Extract apartment details using AI"
+              title="Extract viewing details using AI"
             >
               {isExtracting ? (
                 <svg
@@ -546,29 +546,29 @@ export default function ApartmentViewingForm({
 
         <div>
           <label
-            htmlFor="priceAsked"
+            htmlFor="price"
             className="block text-sm font-medium text-zinc-900 dark:text-zinc-50 mb-2"
           >
-            Price Asked <span className="text-red-500">*</span>
+            Price <span className="text-red-500">*</span>
           </label>
           <input
             type="number"
-            id="priceAsked"
-            name="priceAsked"
-            value={formData.priceAsked}
+            id="price"
+            name="price"
+            value={formData.price}
             onChange={handleChange}
             min="0"
             step="0.01"
             className={`w-full rounded-lg border px-4 py-2 text-sm transition-colors ${
-              errors.priceAsked
+              errors.price
                 ? "border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20"
                 : "border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900"
             } text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:text-zinc-50 dark:placeholder-zinc-500`}
             placeholder="e.g., 250000"
           />
-          {errors.priceAsked && (
+          {errors.price && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-              {errors.priceAsked}
+              {errors.price}
             </p>
           )}
         </div>
@@ -732,8 +732,8 @@ export default function ApartmentViewingForm({
           }
           tooltip={
             isSubmitting
-              ? "Creating apartment viewing..."
-              : "Save and create the apartment viewing record"
+              ? "Creating viewing..."
+              : "Save and create the viewing record"
           }
         />
       </div>
