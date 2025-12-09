@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Button from "@/app/components/Button";
-import { PlusIcon, HomeIcon } from "@/app/components/icons";
+import { PlusIcon, HomeIcon, ExternalLinkIcon } from "@/app/components/icons";
 
 export default async function ApartmentViewingsPage() {
   const apartmentViewings = await prisma.apartmentViewing.findMany({
@@ -62,28 +62,31 @@ export default async function ApartmentViewingsPage() {
               <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800">
                 <thead className="bg-zinc-50 dark:bg-zinc-800/50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                      ID
+                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
+                      Id
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                       Address
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                      Size (sqm)
+                    <th className="px-6 py-3 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
+                      Ad
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                      Price Asked
+                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
+                      Size
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
+                      Price
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                       Bedrooms
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                       Floor
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                       Elevator
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                       Agent
                     </th>
                   </tr>
@@ -109,6 +112,21 @@ export default async function ApartmentViewingsPage() {
                           </a>
                         ) : (
                           viewing.address
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-center text-sm">
+                        {viewing.linkAd ? (
+                          <a
+                            href={viewing.linkAd}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center text-zinc-600 hover:text-blue-600 transition-colors dark:text-zinc-400 dark:hover:text-blue-400"
+                            title="Open ad link"
+                          >
+                            <ExternalLinkIcon className="h-5 w-5" />
+                          </a>
+                        ) : (
+                          <span className="text-zinc-300 dark:text-zinc-700">-</span>
                         )}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-600 dark:text-zinc-400">
