@@ -1,5 +1,6 @@
 import Image from "next/image";
-import Link from "next/link";
+import Button from "@/app/components/Button";
+import { ListIcon, HomeIcon } from "@/app/components/icons";
 
 export default function Home() {
   return (
@@ -36,12 +37,18 @@ export default function Home() {
           </p>
         </div>
         <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <Link
+          <Button
             href="/apartments"
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-          >
-            View Apartments
-          </Link>
+            icon={<ListIcon className="h-5 w-5" />}
+            tooltip="View all apartments"
+            className="h-12 w-12"
+          />
+          <Button
+            href="/apartment-viewings"
+            icon={<HomeIcon className="h-5 w-5" />}
+            tooltip="View all apartment viewings"
+            className="h-12 w-12"
+          />
           <a
             className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
             href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
