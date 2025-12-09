@@ -98,7 +98,18 @@ export default async function ApartmentViewingsPage() {
                         {viewing.id}
                       </td>
                       <td className="px-6 py-4 text-sm text-zinc-900 dark:text-zinc-50">
-                        {viewing.address}
+                        {viewing.linkAddress ? (
+                          <a
+                            href={viewing.linkAddress}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                          >
+                            {viewing.address}
+                          </a>
+                        ) : (
+                          viewing.address
+                        )}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-600 dark:text-zinc-400">
                         {viewing.size ? `${viewing.size.toNumber()} m²` : "-"}

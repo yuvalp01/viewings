@@ -16,14 +16,16 @@
   "dependencies": {
     "@prisma/adapter-mssql": "^7.1.0",
     "@prisma/client": "^7.1.0",
+    "@tailwindcss/postcss": "^4.1.17",
+    "@types/cheerio": "^0.22.35",
+    "cheerio": "^1.1.2",
     "mssql": "^12.2.0",
     "next": "16.0.7",
+    "openai": "^6.10.0",
     "prisma": "^7.1.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "tailwindcss": "^4",
-    "@tailwindcss/postcss": "^4.1.17"
-
+    "tailwindcss": "^4"
   },
   "devDependencies": {
     "@types/node": "^20",

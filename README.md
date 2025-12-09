@@ -2,6 +2,18 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+### Environment Variables
+
+Create a `.env.local` file in the root directory with the following variables:
+
+- `DATABASE_URL` - Azure SQL Database connection string (required)
+- `OPENAI_API_KEY` - OpenAI API key for AI ad data extraction feature (required)
+- `EXTRACTION_RATE_LIMIT` - Rate limit for ad extraction API (optional, default: 10 requests per hour)
+
+See `.env.example` for a template.
+
+### Development
+
 First, run the development server:
 
 ```bash

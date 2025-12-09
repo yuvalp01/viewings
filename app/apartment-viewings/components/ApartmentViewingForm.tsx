@@ -8,6 +8,7 @@ import {
   MapPinIcon,
   ExternalLinkIcon,
   CheckCircleIcon,
+  SparklesIcon,
 } from "@/app/components/icons";
 
 interface Stakeholder {
@@ -51,6 +52,9 @@ export default function ApartmentViewingForm({
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractionError, setExtractionError] = useState<string | null>(null);
+  const [extractionSuccess, setExtractionSuccess] = useState(false);
 
   const [formData, setFormData] = useState<FormData>({
     address: "",
@@ -88,6 +92,83 @@ export default function ApartmentViewingForm({
           return newErrors;
         });
       }
+    }
+  };
+
+  const isValidUrl = (urlString: string): boolean => {
+    try {
+      const url = new URL(urlString);
+      return ["http:", "https:"].includes(url.protocol);
+    } catch {
+      return false;
+    }
+  };
+
+  const handleExtractAdData = async () => {
+    if (!formData.linkAd.trim() || !isValidUrl(formData.linkAd.trim())) {
+      setExtractionError("Please enter a valid URL first");
+      return;
+    }
+
+    setIsExtracting(true);
+    setExtractionError(null);
+    setExtractionSuccess(false);
+
+    try {
+      const response = await fetch("/api/extract-ad-data", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url: formData.linkAd.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to extract ad data");
+      }
+
+      if (data.success && data.data) {
+        const extracted = data.data;
+
+        // Auto-populate form fields with extracted data
+        setFormData((prev) => ({
+          ...prev,
+          size: extracted.size ? extracted.size.toString() : prev.size,
+          priceAsked: extracted.priceAsked
+            ? extracted.priceAsked.toString()
+            : prev.priceAsked,
+          bedrooms: extracted.bedrooms
+            ? extracted.bedrooms.toString()
+            : prev.bedrooms,
+          floor: extracted.floor ? extracted.floor.toString() : prev.floor,
+          constructionYear: extracted.constructionYear
+            ? extracted.constructionYear.toString()
+            : prev.constructionYear,
+          isElevator: extracted.isElevator ?? prev.isElevator,
+        }));
+
+        // Clear any errors for fields that were populated
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          if (extracted.size) delete newErrors.size;
+          if (extracted.priceAsked) delete newErrors.priceAsked;
+          if (extracted.bedrooms) delete newErrors.bedrooms;
+          if (extracted.floor) delete newErrors.floor;
+          if (extracted.constructionYear) delete newErrors.constructionYear;
+          return newErrors;
+        });
+
+        setExtractionSuccess(true);
+        setTimeout(() => setExtractionSuccess(false), 3000);
+      }
+    } catch (err) {
+      setExtractionError(
+        err instanceof Error ? err.message : "An unexpected error occurred"
+      );
+    } finally {
+      setIsExtracting(false);
     }
   };
 
@@ -276,7 +357,84 @@ export default function ApartmentViewingForm({
         </div>
       )}
 
+      {extractionSuccess && (
+        <div className="rounded-lg bg-green-50 border border-green-200 p-4 dark:bg-green-900/20 dark:border-green-800">
+          <p className="text-sm font-medium text-green-800 dark:text-green-200">
+            Data extracted successfully! Please review and edit the fields as needed.
+          </p>
+        </div>
+      )}
+
+      {extractionError && (
+        <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-4 dark:bg-yellow-900/20 dark:border-yellow-800">
+          <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+            {extractionError}
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <label
+            htmlFor="linkAd"
+            className="block text-sm font-medium text-zinc-900 dark:text-zinc-50 mb-2"
+          >
+            Link to Ad
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="url"
+              id="linkAd"
+              name="linkAd"
+              value={formData.linkAd}
+              onChange={handleChange}
+              className={`flex-1 rounded-lg border px-4 py-2 text-sm transition-colors ${
+                errors.linkAd
+                  ? "border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20"
+                  : "border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900"
+              } text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:text-zinc-50 dark:placeholder-zinc-500`}
+              placeholder="https://..."
+            />
+            <button
+              type="button"
+              onClick={handleExtractAdData}
+              disabled={!formData.linkAd.trim() || !isValidUrl(formData.linkAd.trim()) || isExtracting}
+              className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+              title="Extract apartment details using AI"
+            >
+              {isExtracting ? (
+                <svg
+                  className="h-5 w-5 animate-spin"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+              ) : (
+                <SparklesIcon className="h-5 w-5" />
+              )}
+            </button>
+          </div>
+          {errors.linkAd && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              {errors.linkAd}
+            </p>
+          )}
+        </div>
+
         <div className="sm:col-span-2">
           <label
             htmlFor="address"
@@ -495,33 +653,6 @@ export default function ApartmentViewingForm({
           {errors.constructionYear && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">
               {errors.constructionYear}
-            </p>
-          )}
-        </div>
-
-        <div className="sm:col-span-2">
-          <label
-            htmlFor="linkAd"
-            className="block text-sm font-medium text-zinc-900 dark:text-zinc-50 mb-2"
-          >
-            Link to Ad
-          </label>
-          <input
-            type="url"
-            id="linkAd"
-            name="linkAd"
-            value={formData.linkAd}
-            onChange={handleChange}
-            className={`w-full rounded-lg border px-4 py-2 text-sm transition-colors ${
-              errors.linkAd
-                ? "border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20"
-                : "border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900"
-            } text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:text-zinc-50 dark:placeholder-zinc-500`}
-            placeholder="https://..."
-          />
-          {errors.linkAd && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-              {errors.linkAd}
             </p>
           )}
         </div>
