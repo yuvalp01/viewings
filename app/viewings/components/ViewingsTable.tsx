@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { EditIcon, TrashIcon, ExternalLinkIcon, DocumentIcon, XIcon, UserIcon, CalendarIcon, CalendarCheckIcon } from "@/app/components/icons";
+import { EditIcon, TrashIcon, ExternalLinkIcon, DocumentIcon, XIcon, UserIcon, CalendarIcon, CalendarCheckIcon, ClipboardIcon } from "@/app/components/icons";
 import EditViewingModal from "./EditViewingModal";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import ScheduleVisitModal from "./ScheduleVisitModal";
+import VisitDetailsModal from "./VisitDetailsModal";
 
 // Helper function to safely convert to number
 // Values are already serialized from server component, but we keep this for safety
@@ -23,6 +24,11 @@ function toNumber(value: number | null | undefined): number | null {
 interface Stakeholder {
   id: number;
   name: string;
+}
+
+interface QualityLevel {
+  id: number;
+  name: string | null;
 }
 
 interface Viewing {
@@ -47,12 +53,14 @@ interface ViewingsTableProps {
   viewings: Viewing[];
   stakeholders: Stakeholder[];
   scheduleStakeholders: Stakeholder[];
+  qualityLevels: QualityLevel[];
 }
 
 export default function ViewingsTable({
   viewings,
   stakeholders,
   scheduleStakeholders,
+  qualityLevels,
 }: ViewingsTableProps) {
   const [editingViewing, setEditingViewing] = useState<Viewing | null>(null);
   const [deletingViewingId, setDeletingViewingId] = useState<number | null>(
@@ -63,6 +71,7 @@ export default function ViewingsTable({
   >(null);
   const [viewingComments, setViewingComments] = useState<string | null>(null);
   const [schedulingViewing, setSchedulingViewing] = useState<Viewing | null>(null);
+  const [visitDetailsViewing, setVisitDetailsViewing] = useState<Viewing | null>(null);
 
   const handleEditClick = (viewing: Viewing) => {
     setEditingViewing(viewing);
@@ -96,6 +105,14 @@ export default function ViewingsTable({
 
   const handleCloseSchedule = () => {
     setSchedulingViewing(null);
+  };
+
+  const handleVisitDetailsClick = (viewing: Viewing) => {
+    setVisitDetailsViewing(viewing);
+  };
+
+  const handleCloseVisitDetails = () => {
+    setVisitDetailsViewing(null);
   };
 
   // Handle escape key for comments modal
@@ -278,6 +295,14 @@ export default function ViewingsTable({
                   <td className="whitespace-nowrap px-3 py-4 text-sm sm:px-6">
                     <div className="flex items-center justify-center gap-2">
                       <button
+                        onClick={() => handleVisitDetailsClick(viewing)}
+                        className="inline-flex items-center justify-center rounded-lg p-2 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                        title="Visit details"
+                        aria-label="Visit details"
+                      >
+                        <ClipboardIcon className="h-5 w-5" />
+                      </button>
+                      <button
                         onClick={() => handleScheduleVisit(viewing)}
                         className={`inline-flex items-center justify-center rounded-lg p-2 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 ${
                           viewing.viewingDate
@@ -375,6 +400,15 @@ export default function ViewingsTable({
           stakeholders={scheduleStakeholders}
           isOpen={!!schedulingViewing}
           onClose={handleCloseSchedule}
+        />
+      )}
+
+      {visitDetailsViewing && (
+        <VisitDetailsModal
+          viewing={visitDetailsViewing}
+          qualityLevels={qualityLevels}
+          isOpen={!!visitDetailsViewing}
+          onClose={handleCloseVisitDetails}
         />
       )}
     </>

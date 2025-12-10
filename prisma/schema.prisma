@@ -45,6 +45,15 @@ model Stakeholder {
   @@map("stakeholders")
 }
 
+model QualityLevel {
+  id          Int      @id @map("Id") @db.TinyInt
+  name        String   @map("Name") @db.VarChar(20)
+  description String?  @map("Description") @db.NVarChar(255)
+
+  @@schema("dbo")
+  @@map("lkp_qualityLevel")
+}
+
 model Viewing {
   id                Int       @id @default(autoincrement())
   address           String?   @map("Address")
@@ -61,6 +70,18 @@ model Viewing {
   viewingDate       DateTime? @map("ViewingDate") @db.DateTime2
   viewedByStakeholderId Int?  @map("ViewedByStakeholderId")
   isDeleted         Boolean   @default(false) @map("IsDeleted")
+  
+  // Visit details fields
+  isSecurityDoor              Boolean? @map("IsSecurityDoor")
+  buildingSecurityDoorsPercent Int?    @map("BuildingSecurityDoorsPercent") @db.TinyInt
+  aluminumWindowsLevel        Int?    @map("AluminumWindowsLevel") @db.TinyInt
+  renovationKitchenLevel      Int?    @map("RenovationKitchenLevel") @db.TinyInt
+  renovationBathroomLevel      Int?    @map("RenovationBathroomLevel") @db.TinyInt
+  renovationLevel              Int?    @map("RenovationLevel") @db.TinyInt
+  viewLevel                    Int?    @map("ViewLevel") @db.TinyInt
+  balconyLevel                 Int?    @map("BalconyLevel") @db.TinyInt
+  buildingLobbyLevel          Int?    @map("BuildingLobbyLevel") @db.TinyInt
+  buildingMaintenanceLevel     Int?    @map("BuildingMaintenanceLevel") @db.TinyInt
 
   agentStakeholder Stakeholder? @relation("AgentStakeholder", fields: [agentStakeholderId], references: [id])
   viewedByStakeholder Stakeholder? @relation("ViewedByStakeholder", fields: [viewedByStakeholderId], references: [id], onDelete: NoAction, onUpdate: NoAction)

@@ -53,6 +53,16 @@ export default async function ViewingsPage() {
     },
   });
 
+  const qualityLevels = await prisma.qualityLevel.findMany({
+    orderBy: {
+      id: "asc",
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
   // Serialize Decimal values to numbers for client component
   // Prisma Decimal objects cannot be passed to Client Components
   const serializedViewings = viewings.map((viewing: any) => {
@@ -124,7 +134,7 @@ export default async function ViewingsPage() {
             />
           </div>
         ) : (
-          <ViewingsTable viewings={serializedViewings} stakeholders={stakeholders} scheduleStakeholders={scheduleStakeholders} />
+          <ViewingsTable viewings={serializedViewings} stakeholders={stakeholders} scheduleStakeholders={scheduleStakeholders} qualityLevels={qualityLevels} />
         )}
 
         <div className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
