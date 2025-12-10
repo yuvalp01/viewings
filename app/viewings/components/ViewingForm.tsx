@@ -43,6 +43,7 @@ interface FormErrors {
   constructionYear?: string;
   linkAd?: string;
   linkAddress?: string;
+  comments?: string;
 }
 
 export default function ViewingForm({

@@ -37,15 +37,51 @@ export default async function ViewingsPage() {
     },
   });
 
+  const scheduleStakeholders = await prisma.stakeholder.findMany({
+    where: {
+      type: {
+        gte: 10,
+      },
+      isDeleted: false,
+    },
+    orderBy: {
+      name: "asc",
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
   // Serialize Decimal values to numbers for client component
   // Prisma Decimal objects cannot be passed to Client Components
-  const serializedViewings = viewings.map((viewing: typeof viewings[0]) => ({
-    ...viewing,
-    size: viewing.size ? Number(viewing.size) : null,
-    price: viewing.price ? Number(viewing.price) : null,
-    bedrooms: viewing.bedrooms ? Number(viewing.bedrooms) : null,
-    floor: viewing.floor ? Number(viewing.floor) : null,
-  }));
+  const serializedViewings = viewings.map((viewing: any) => {
+    let viewingDateStr = null;
+    if (viewing.viewingDate) {
+      if (viewing.viewingDate instanceof Date) {
+        // Format as YYYY-MM-DDTHH:mm:ss without timezone conversion
+        // Extract UTC components to preserve the exact stored time
+        const year = viewing.viewingDate.getUTCFullYear();
+        const month = String(viewing.viewingDate.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(viewing.viewingDate.getUTCDate()).padStart(2, '0');
+        const hours = String(viewing.viewingDate.getUTCHours()).padStart(2, '0');
+        const minutes = String(viewing.viewingDate.getUTCMinutes()).padStart(2, '0');
+        const seconds = String(viewing.viewingDate.getUTCSeconds()).padStart(2, '0');
+        viewingDateStr = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+      } else {
+        viewingDateStr = viewing.viewingDate;
+      }
+    }
+    return {
+      ...viewing,
+      size: viewing.size ? Number(viewing.size) : null,
+      price: viewing.price ? Number(viewing.price) : null,
+      bedrooms: viewing.bedrooms ? Number(viewing.bedrooms) : null,
+      floor: viewing.floor ? Number(viewing.floor) : null,
+      viewingDate: viewingDateStr,
+      viewedByStakeholderId: viewing.viewedByStakeholderId ?? null,
+    };
+  });
 
   return (
     <div className="min-h-screen bg-zinc-50 font-sans dark:bg-black">
@@ -88,7 +124,7 @@ export default async function ViewingsPage() {
             />
           </div>
         ) : (
-          <ViewingsTable viewings={serializedViewings} stakeholders={stakeholders} />
+          <ViewingsTable viewings={serializedViewings} stakeholders={stakeholders} scheduleStakeholders={scheduleStakeholders} />
         )}
 
         <div className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">

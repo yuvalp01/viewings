@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { EditIcon, TrashIcon, ExternalLinkIcon, DocumentIcon, XIcon, UserIcon } from "@/app/components/icons";
+import { EditIcon, TrashIcon, ExternalLinkIcon, DocumentIcon, XIcon, UserIcon, CalendarIcon } from "@/app/components/icons";
 import EditViewingModal from "./EditViewingModal";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
+import ScheduleVisitModal from "./ScheduleVisitModal";
 
 // Helper function to safely convert to number
 // Values are already serialized from server component, but we keep this for safety
@@ -38,16 +39,20 @@ interface Viewing {
   comments: string | null;
   agentStakeholderId: number | null;
   agentStakeholder: Stakeholder | null;
+  viewingDate: Date | string | null;
+  viewedByStakeholderId: number | null;
 }
 
 interface ViewingsTableProps {
   viewings: Viewing[];
   stakeholders: Stakeholder[];
+  scheduleStakeholders: Stakeholder[];
 }
 
 export default function ViewingsTable({
   viewings,
   stakeholders,
+  scheduleStakeholders,
 }: ViewingsTableProps) {
   const [editingViewing, setEditingViewing] = useState<Viewing | null>(null);
   const [deletingViewingId, setDeletingViewingId] = useState<number | null>(
@@ -57,6 +62,7 @@ export default function ViewingsTable({
     string | null
   >(null);
   const [viewingComments, setViewingComments] = useState<string | null>(null);
+  const [schedulingViewing, setSchedulingViewing] = useState<Viewing | null>(null);
 
   const handleEditClick = (viewing: Viewing) => {
     setEditingViewing(viewing);
@@ -82,6 +88,14 @@ export default function ViewingsTable({
 
   const handleCloseComments = () => {
     setViewingComments(null);
+  };
+
+  const handleScheduleVisit = (viewing: Viewing) => {
+    setSchedulingViewing(viewing);
+  };
+
+  const handleCloseSchedule = () => {
+    setSchedulingViewing(null);
   };
 
   // Handle escape key for comments modal
@@ -270,6 +284,14 @@ export default function ViewingsTable({
                   <td className="whitespace-nowrap px-3 py-4 text-sm sm:px-6">
                     <div className="flex items-center justify-center gap-2">
                       <button
+                        onClick={() => handleScheduleVisit(viewing)}
+                        className="inline-flex items-center justify-center rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300"
+                        title="Schedule visit"
+                        aria-label="Schedule visit"
+                      >
+                        <CalendarIcon className="h-5 w-5" />
+                      </button>
+                      <button
                         onClick={() => handleEditClick(viewing)}
                         className="inline-flex items-center justify-center rounded-lg p-2 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
                         title="Edit viewing"
@@ -343,6 +365,15 @@ export default function ViewingsTable({
             </div>
           </div>
         </div>
+      )}
+
+      {schedulingViewing && (
+        <ScheduleVisitModal
+          viewing={schedulingViewing}
+          stakeholders={scheduleStakeholders}
+          isOpen={!!schedulingViewing}
+          onClose={handleCloseSchedule}
+        />
       )}
     </>
   );

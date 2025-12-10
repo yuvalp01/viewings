@@ -1,23 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// Helper function to validate viewing data
-function validateViewingData(body: any): { error?: string } {
-  // Validate required fields
-  if (!body.address || typeof body.address !== "string" || !body.address.trim()) {
-    return { error: "Address is required" };
-  }
+// Helper function to validate viewing data (only validates fields that are provided)
+function validateViewingData(body: any, isPartial: boolean = false): { error?: string } {
+  // Validate required fields only if not partial update
+  if (!isPartial) {
+    if (!body.address || typeof body.address !== "string" || !body.address.trim()) {
+      return { error: "Address is required" };
+    }
 
-  if (typeof body.size !== "number" || body.size <= 0) {
-    return { error: "Size must be a positive number" };
-  }
+    if (typeof body.size !== "number" || body.size <= 0) {
+      return { error: "Size must be a positive number" };
+    }
 
-  if (typeof body.price !== "number" || body.price <= 0) {
-    return { error: "Price must be a positive number" };
-  }
+    if (typeof body.price !== "number" || body.price <= 0) {
+      return { error: "Price must be a positive number" };
+    }
 
-  if (typeof body.bedrooms !== "number" || body.bedrooms <= 0) {
-    return { error: "Bedrooms must be a positive number" };
+    if (typeof body.bedrooms !== "number" || body.bedrooms <= 0) {
+      return { error: "Bedrooms must be a positive number" };
+    }
+  } else {
+    // For partial updates, validate only if field is provided
+    if (body.address !== undefined) {
+      if (!body.address || typeof body.address !== "string" || !body.address.trim()) {
+        return { error: "Address cannot be empty" };
+      }
+    }
+
+    if (body.size !== undefined) {
+      if (typeof body.size !== "number" || body.size <= 0) {
+        return { error: "Size must be a positive number" };
+      }
+    }
+
+    if (body.price !== undefined) {
+      if (typeof body.price !== "number" || body.price <= 0) {
+        return { error: "Price must be a positive number" };
+      }
+    }
+
+    if (body.bedrooms !== undefined) {
+      if (typeof body.bedrooms !== "number" || body.bedrooms <= 0) {
+        return { error: "Bedrooms must be a positive number" };
+      }
+    }
   }
 
   // Validate optional fields
@@ -61,6 +88,17 @@ function validateViewingData(body: any): { error?: string } {
       } catch {
         return { error: "Google Maps link must be a valid URL" };
       }
+    }
+  }
+
+  // Validate viewingDate if provided
+  if (body.viewingDate !== null && body.viewingDate !== undefined) {
+    if (typeof body.viewingDate !== "string") {
+      return { error: "Viewing date must be a valid date string" };
+    }
+    const date = new Date(body.viewingDate);
+    if (isNaN(date.getTime())) {
+      return { error: "Viewing date must be a valid date" };
     }
   }
 
@@ -164,37 +202,6 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Validate viewing data
-    const validation = validateViewingData(body);
-    if (validation.error) {
-      return NextResponse.json(
-        { error: validation.error },
-        { status: 400 }
-      );
-    }
-
-    // Validate agentStakeholderId if provided
-    if (body.agentStakeholderId !== null && body.agentStakeholderId !== undefined) {
-      if (typeof body.agentStakeholderId !== "number") {
-        return NextResponse.json(
-          { error: "Agent stakeholder ID must be a number" },
-          { status: 400 }
-        );
-      }
-
-      // Verify stakeholder exists
-      const stakeholder = await prisma.stakeholder.findUnique({
-        where: { id: body.agentStakeholderId },
-      });
-
-      if (!stakeholder || stakeholder.isDeleted) {
-        return NextResponse.json(
-          { error: "Invalid agent stakeholder" },
-          { status: 400 }
-        );
-      }
-    }
-
     // Check if viewing exists and is not deleted
     const existingViewing = await prisma.viewing.findUnique({
       where: { id: body.id },
@@ -214,22 +221,144 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Determine if this is a partial update (only scheduling fields)
+    const isPartialUpdate = 
+      body.viewingDate !== undefined || 
+      body.viewedByStakeholderId !== undefined;
+
+    // Validate viewing data (only validates fields that are provided for partial updates)
+    const validation = validateViewingData(body, isPartialUpdate);
+    if (validation.error) {
+      return NextResponse.json(
+        { error: validation.error },
+        { status: 400 }
+      );
+    }
+
+    // Build update data object conditionally
+    const updateData: any = {};
+
+    // Only update fields that are provided
+    if (body.address !== undefined) {
+      updateData.address = body.address.trim();
+    }
+    if (body.size !== undefined) {
+      updateData.size = body.size;
+    }
+    if (body.price !== undefined) {
+      updateData.price = body.price;
+    }
+    if (body.bedrooms !== undefined) {
+      updateData.bedrooms = body.bedrooms;
+    }
+    if (body.floor !== undefined) {
+      updateData.floor = body.floor ?? null;
+    }
+    if (body.isElevator !== undefined) {
+      updateData.isElevator = body.isElevator ?? false;
+    }
+    if (body.constructionYear !== undefined) {
+      updateData.constructionYear = body.constructionYear ?? null;
+    }
+    if (body.linkAd !== undefined) {
+      updateData.linkAd = body.linkAd?.trim() || null;
+    }
+    if (body.linkAddress !== undefined) {
+      updateData.linkAddress = body.linkAddress?.trim() || null;
+    }
+    if (body.comments !== undefined) {
+      updateData.comments = body.comments?.trim() || null;
+    }
+
+    // Validate agentStakeholderId if provided
+    if (body.agentStakeholderId !== undefined) {
+      if (body.agentStakeholderId !== null) {
+        if (typeof body.agentStakeholderId !== "number") {
+          return NextResponse.json(
+            { error: "Agent stakeholder ID must be a number" },
+            { status: 400 }
+          );
+        }
+
+        // Verify stakeholder exists
+        const stakeholder = await prisma.stakeholder.findUnique({
+          where: { id: body.agentStakeholderId },
+        });
+
+        if (!stakeholder || stakeholder.isDeleted) {
+          return NextResponse.json(
+            { error: "Invalid agent stakeholder" },
+            { status: 400 }
+          );
+        }
+      }
+      updateData.agentStakeholderId = body.agentStakeholderId ?? null;
+    }
+
+    // Handle viewingDate if provided
+    if (body.viewingDate !== undefined) {
+      if (body.viewingDate !== null) {
+        // Parse the date string (format: YYYY-MM-DDTHH:mm:ss)
+        // Treat it as a local datetime value without timezone conversion
+        // SQL Server DateTime2 stores naive datetime, so we parse and store as-is
+        const dateString = body.viewingDate;
+        if (typeof dateString === "string") {
+          // Parse the date string components
+          const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+          if (match) {
+            const [, year, month, day, hour, minute, second] = match;
+            // Create Date object using UTC methods but with the local time values
+            // This ensures SQL Server stores the exact datetime without timezone conversion
+            const date = new Date(Date.UTC(
+              parseInt(year),
+              parseInt(month) - 1, // Month is 0-indexed
+              parseInt(day),
+              parseInt(hour),
+              parseInt(minute),
+              parseInt(second)
+            ));
+            updateData.viewingDate = date;
+          } else {
+            // Fallback to standard Date parsing if format doesn't match
+            updateData.viewingDate = new Date(dateString);
+          }
+        } else {
+          updateData.viewingDate = new Date(dateString);
+        }
+      } else {
+        updateData.viewingDate = null;
+      }
+    }
+
+    // Validate viewedByStakeholderId if provided
+    if (body.viewedByStakeholderId !== undefined) {
+      if (body.viewedByStakeholderId !== null) {
+        if (typeof body.viewedByStakeholderId !== "number") {
+          return NextResponse.json(
+            { error: "Viewed by stakeholder ID must be a number" },
+            { status: 400 }
+          );
+        }
+
+        // Verify stakeholder exists and is not deleted
+        const viewedByStakeholder = await prisma.stakeholder.findUnique({
+          where: { id: body.viewedByStakeholderId },
+        });
+
+        if (!viewedByStakeholder || viewedByStakeholder.isDeleted) {
+          return NextResponse.json(
+            { error: "Invalid viewed by stakeholder" },
+            { status: 400 }
+          );
+        }
+      }
+      updateData.viewedByStakeholderId = body.viewedByStakeholderId ?? null;
+    }
+
     // Update viewing record
     const viewing = await prisma.viewing.update({
       where: { id: body.id },
-      data: {
-        address: body.address.trim(),
-        size: body.size,
-        price: body.price,
-        bedrooms: body.bedrooms,
-        floor: body.floor ?? null,
-        isElevator: body.isElevator ?? false,
-        constructionYear: body.constructionYear ?? null,
-        linkAd: body.linkAd?.trim() || null,
-        linkAddress: body.linkAddress?.trim() || null,
-        comments: body.comments?.trim() || null,
-        agentStakeholderId: body.agentStakeholderId ?? null,
-      },
+      data: updateData,
     });
 
     return NextResponse.json(

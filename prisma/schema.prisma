@@ -39,6 +39,7 @@ model Stakeholder {
   isDeleted Boolean @default(false) @map("IsDeleted")
 
   viewingsAsAgent Viewing[] @relation("AgentStakeholder")
+  viewingsAsViewedBy Viewing[] @relation("ViewedByStakeholder")
 
   @@schema("dbo")
   @@map("stakeholders")
@@ -57,9 +58,12 @@ model Viewing {
   linkAddress       String?   @map("LinkAddress") @db.NVarChar(500)
   comments          String?   @map("Comments") @db.NVarChar(500)
   agentStakeholderId Int?     @map("AgentStakeholderId")
+  viewingDate       DateTime? @map("ViewingDate") @db.DateTime2
+  viewedByStakeholderId Int?  @map("ViewedByStakeholderId")
   isDeleted         Boolean   @default(false) @map("IsDeleted")
 
   agentStakeholder Stakeholder? @relation("AgentStakeholder", fields: [agentStakeholderId], references: [id])
+  viewedByStakeholder Stakeholder? @relation("ViewedByStakeholder", fields: [viewedByStakeholderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@schema("dbo")
   @@map("viewings")
