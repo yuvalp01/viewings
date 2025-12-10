@@ -45,7 +45,7 @@ model Stakeholder {
 
 model Viewing {
   id                Int       @id @default(autoincrement())
-  address           String?   @map("Address") @db.NVarChar(Max)
+  address           String?   @map("Address")
   size              Decimal?  @map("Size") @db.Decimal(9, 2)
   price             Decimal?  @map("Price") @db.Decimal(18, 2)
   bedrooms          Decimal?  @map("Bedrooms") @db.Decimal(3, 1)
