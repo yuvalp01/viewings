@@ -37,9 +37,11 @@ interface FormErrors {
 }
 
 const generateGoogleCalendarLink = (
-  title: string,
+  address: string,
   dateTime: Date,
-  address: string
+  agentName: string | null,
+  linkAd: string | null,
+  comments: string | null
 ): string => {
   const startDate = dateTime.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
   const endDate = new Date(dateTime.getTime() + 60 * 60 * 1000) // +1 hour
@@ -47,11 +49,25 @@ const generateGoogleCalendarLink = (
     .replace(/[-:]/g, "")
     .split(".")[0] + "Z";
 
+  // Build title: "Viewing: <Address> (<Agent>)" - only include agent if available
+  const title = agentName
+    ? `Viewing: ${address} (${agentName})`
+    : `Viewing: ${address}`;
+
+  // Build description with conditional sections
+  let description = `Viewing for: ${address}`;
+  if (linkAd && linkAd.trim()) {
+    description += `\nLink to the ad: <a href="${linkAd}">${linkAd}</a>`;
+  }
+  if (comments && comments.trim()) {
+    description += `\nComments: ${comments}`;
+  }
+
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: title,
     dates: `${startDate}/${endDate}`,
-    details: `Viewing for: ${address}`,
+    details: description,
     location: address || "",
   });
 
@@ -261,9 +277,11 @@ export default function ScheduleVisitModal({
     formData.date.trim() && formData.time.trim() && viewing.address;
   const calendarLink = canGenerateCalendarLink
     ? generateGoogleCalendarLink(
-        `Viewing: ${viewing.address}`,
+        viewing.address || "",
         new Date(`${formData.date}T${formData.time}`),
-        viewing.address || ""
+        (viewing as any).agentStakeholder?.name || null,
+        (viewing as any).linkAd || null,
+        (viewing as any).comments || null
       )
     : null;
 

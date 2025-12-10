@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { EditIcon, TrashIcon, ExternalLinkIcon, DocumentIcon, XIcon, UserIcon, CalendarIcon } from "@/app/components/icons";
+import { EditIcon, TrashIcon, ExternalLinkIcon, DocumentIcon, XIcon, UserIcon, CalendarIcon, CalendarCheckIcon } from "@/app/components/icons";
 import EditViewingModal from "./EditViewingModal";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import ScheduleVisitModal from "./ScheduleVisitModal";
@@ -155,9 +155,6 @@ export default function ViewingsTable({
                 <th className="hidden px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6 lg:table-cell">
                   Elevator
                 </th>
-                <th className="hidden px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6 lg:table-cell">
-                  Agent
-                </th>
                 <th className="px-3 py-3 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
                   Details
                 </th>
@@ -252,9 +249,6 @@ export default function ViewingsTable({
                       </span>
                     )}
                   </td>
-                  <td className="hidden px-3 py-4 text-sm text-zinc-600 dark:text-zinc-400 sm:px-6 lg:table-cell">
-                    {viewing.agentStakeholder?.name || "-"}
-                  </td>
                   <td className="whitespace-nowrap px-3 py-4 text-center text-sm sm:px-6">
                     <div className="flex items-center justify-center gap-2">
                       {viewing.comments && viewing.comments.trim() ? (
@@ -285,11 +279,19 @@ export default function ViewingsTable({
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => handleScheduleVisit(viewing)}
-                        className="inline-flex items-center justify-center rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300"
-                        title="Schedule visit"
-                        aria-label="Schedule visit"
+                        className={`inline-flex items-center justify-center rounded-lg p-2 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 ${
+                          viewing.viewingDate
+                            ? "text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+                            : "text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                        }`}
+                        title={viewing.viewingDate ? "View/edit scheduled visit" : "Schedule visit"}
+                        aria-label={viewing.viewingDate ? "View/edit scheduled visit" : "Schedule visit"}
                       >
-                        <CalendarIcon className="h-5 w-5" />
+                        {viewing.viewingDate ? (
+                          <CalendarCheckIcon className="h-5 w-5" />
+                        ) : (
+                          <CalendarIcon className="h-5 w-5" />
+                        )}
                       </button>
                       <button
                         onClick={() => handleEditClick(viewing)}
