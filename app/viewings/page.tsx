@@ -4,6 +4,7 @@ import { PlusIcon, HomeIcon } from "@/app/components/icons";
 import RefreshButton from "./components/RefreshButton";
 import ViewingsTable from "./components/ViewingsTable";
 
+export const dynamic = 'force-dynamic';
 export default async function ViewingsPage() {
   const viewings = await prisma.viewing.findMany({
     where: {
