@@ -1,0 +1,241 @@
+"use client";
+
+import { useState } from "react";
+import { EditIcon, TrashIcon, ExternalLinkIcon } from "@/app/components/icons";
+import EditViewingModal from "./EditViewingModal";
+import DeleteConfirmationModal from "./DeleteConfirmationModal";
+
+// Helper function to safely convert to number
+// Values are already serialized from server component, but we keep this for safety
+function toNumber(value: number | null | undefined): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value === "number") {
+    return value;
+  }
+  // Fallback: try to convert to number (shouldn't happen if serialized correctly)
+  const num = Number(value);
+  return isNaN(num) ? null : num;
+}
+
+interface Stakeholder {
+  id: number;
+  name: string;
+}
+
+interface Viewing {
+  id: number;
+  address: string | null;
+  size: number | null;
+  price: number | null;
+  bedrooms: number | null;
+  floor: number | null;
+  isElevator: boolean;
+  constructionYear: number | null;
+  linkAd: string | null;
+  linkAddress: string | null;
+  agentStakeholderId: number | null;
+  agentStakeholder: Stakeholder | null;
+}
+
+interface ViewingsTableProps {
+  viewings: Viewing[];
+  stakeholders: Stakeholder[];
+}
+
+export default function ViewingsTable({
+  viewings,
+  stakeholders,
+}: ViewingsTableProps) {
+  const [editingViewing, setEditingViewing] = useState<Viewing | null>(null);
+  const [deletingViewingId, setDeletingViewingId] = useState<number | null>(
+    null
+  );
+  const [deletingViewingAddress, setDeletingViewingAddress] = useState<
+    string | null
+  >(null);
+
+  const handleEditClick = (viewing: Viewing) => {
+    setEditingViewing(viewing);
+  };
+
+  const handleDeleteClick = (viewing: Viewing) => {
+    setDeletingViewingId(viewing.id);
+    setDeletingViewingAddress(viewing.address);
+  };
+
+  const handleCloseEdit = () => {
+    setEditingViewing(null);
+  };
+
+  const handleCloseDelete = () => {
+    setDeletingViewingId(null);
+    setDeletingViewingAddress(null);
+  };
+
+  return (
+    <>
+      <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800">
+            <thead className="bg-zinc-50 dark:bg-zinc-800/50">
+              <tr>
+                <th className="px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
+                  Id
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
+                  Address
+                </th>
+                <th className="px-3 py-3 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
+                  Ad
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
+                  Size
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
+                  Price
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
+                  Bedrooms
+                </th>
+                <th className="hidden px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6 md:table-cell">
+                  Floor
+                </th>
+                <th className="hidden px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6 lg:table-cell">
+                  Elevator
+                </th>
+                <th className="hidden px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6 lg:table-cell">
+                  Agent
+                </th>
+                <th className="px-3 py-3 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-200 bg-white dark:divide-zinc-800 dark:bg-zinc-900">
+              {viewings.map((viewing) => (
+                <tr
+                  key={viewing.id}
+                  className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                >
+                  <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-zinc-900 dark:text-zinc-50 sm:px-6">
+                    {viewing.id}
+                  </td>
+                  <td className="px-3 py-4 text-sm text-zinc-900 dark:text-zinc-50 sm:px-6">
+                    {viewing.linkAddress ? (
+                      <a
+                        href={viewing.linkAddress}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                      >
+                        {viewing.address}
+                      </a>
+                    ) : (
+                      viewing.address
+                    )}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-center text-sm sm:px-6">
+                    {viewing.linkAd ? (
+                      <a
+                        href={viewing.linkAd}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center text-zinc-600 hover:text-blue-600 transition-colors dark:text-zinc-400 dark:hover:text-blue-400"
+                        title="Open ad link"
+                      >
+                        <ExternalLinkIcon className="h-5 w-5" />
+                      </a>
+                    ) : (
+                      <span className="text-zinc-300 dark:text-zinc-700">-</span>
+                    )}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-600 dark:text-zinc-400 sm:px-6">
+                    {(() => {
+                      const size = toNumber(viewing.size);
+                      return size !== null ? `${size} m²` : "-";
+                    })()}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-zinc-900 dark:text-zinc-50 sm:px-6">
+                    {(() => {
+                      const price = toNumber(viewing.price);
+                      return price !== null
+                        ? `€${price.toLocaleString()}`
+                        : "-";
+                    })()}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-600 dark:text-zinc-400 sm:px-6">
+                    {(() => {
+                      const bedrooms = toNumber(viewing.bedrooms);
+                      return bedrooms !== null ? bedrooms : "-";
+                    })()}
+                  </td>
+                  <td className="hidden whitespace-nowrap px-3 py-4 text-sm text-zinc-600 dark:text-zinc-400 sm:px-6 md:table-cell">
+                    {(() => {
+                      const floor = toNumber(viewing.floor);
+                      return floor !== null ? floor : "-";
+                    })()}
+                  </td>
+                  <td className="hidden whitespace-nowrap px-3 py-4 text-sm sm:px-6 lg:table-cell">
+                    {viewing.isElevator ? (
+                      <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                        Yes
+                      </span>
+                    ) : (
+                      <span className="text-zinc-400 dark:text-zinc-500">
+                        No
+                      </span>
+                    )}
+                  </td>
+                  <td className="hidden px-3 py-4 text-sm text-zinc-600 dark:text-zinc-400 sm:px-6 lg:table-cell">
+                    {viewing.agentStakeholder?.name || "-"}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm sm:px-6">
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => handleEditClick(viewing)}
+                        className="inline-flex items-center justify-center rounded-lg p-2 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                        title="Edit viewing"
+                        aria-label="Edit viewing"
+                      >
+                        <EditIcon className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(viewing)}
+                        className="inline-flex items-center justify-center rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
+                        title="Delete viewing"
+                        aria-label="Delete viewing"
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {editingViewing && (
+        <EditViewingModal
+          viewing={editingViewing}
+          stakeholders={stakeholders}
+          isOpen={!!editingViewing}
+          onClose={handleCloseEdit}
+        />
+      )}
+
+      {deletingViewingId !== null && (
+        <DeleteConfirmationModal
+          viewingId={deletingViewingId}
+          viewingAddress={deletingViewingAddress}
+          isOpen={deletingViewingId !== null}
+          onClose={handleCloseDelete}
+        />
+      )}
+    </>
+  );
+}
+
