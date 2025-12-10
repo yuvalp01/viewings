@@ -21,6 +21,7 @@ interface Viewing {
   constructionYear: number | null;
   linkAd: string | null;
   linkAddress: string | null;
+  comments: string | null;
   agentStakeholderId: number | null;
 }
 
@@ -41,6 +42,7 @@ interface FormData {
   constructionYear: string;
   linkAd: string;
   linkAddress: string;
+  comments: string;
   agentStakeholderId: string;
 }
 
@@ -80,6 +82,7 @@ export default function EditViewingModal({
     constructionYear: "",
     linkAd: "",
     linkAddress: "",
+    comments: "",
     agentStakeholderId: "",
   });
 
@@ -107,6 +110,7 @@ export default function EditViewingModal({
           : "",
         linkAd: viewing.linkAd || "",
         linkAddress: viewing.linkAddress || "",
+        comments: viewing.comments || "",
         agentStakeholderId: viewing.agentStakeholderId
           ? viewing.agentStakeholderId.toString()
           : "",
@@ -335,6 +339,7 @@ export default function EditViewingModal({
             : null,
           linkAd: formData.linkAd.trim() || null,
           linkAddress: formData.linkAddress.trim() || null,
+          comments: formData.comments.trim() || null,
           agentStakeholderId: formData.agentStakeholderId
             ? parseInt(formData.agentStakeholderId)
             : null,
@@ -741,7 +746,7 @@ export default function EditViewingModal({
                   htmlFor="edit-agentStakeholderId"
                   className="block text-sm font-medium text-zinc-900 dark:text-zinc-50 mb-2"
                 >
-                  Agent Stakeholder
+                  Agent
                 </label>
                 <select
                   id="edit-agentStakeholderId"
@@ -776,6 +781,33 @@ export default function EditViewingModal({
                     Has Elevator
                   </label>
                 </div>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label
+                  htmlFor="edit-comments"
+                  className="block text-sm font-medium text-zinc-900 dark:text-zinc-50 mb-2"
+                >
+                  Comments
+                </label>
+                <textarea
+                  id="edit-comments"
+                  name="comments"
+                  value={formData.comments}
+                  onChange={handleChange}
+                  rows={4}
+                  className={`w-full rounded-lg border px-4 py-2 text-sm transition-colors ${
+                    errors.comments
+                      ? "border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20"
+                      : "border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900"
+                  } text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:text-zinc-50 dark:placeholder-zinc-500`}
+                  placeholder="Enter any additional comments or notes..."
+                />
+                {errors.comments && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    {errors.comments}
+                  </p>
+                )}
               </div>
             </div>
 

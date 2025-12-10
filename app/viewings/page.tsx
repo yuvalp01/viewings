@@ -25,6 +25,7 @@ export default async function ViewingsPage() {
 
   const stakeholders = await prisma.stakeholder.findMany({
     where: {
+      type: 5,
       isDeleted: false,
     },
     orderBy: {

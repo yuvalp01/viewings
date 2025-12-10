@@ -114,6 +114,7 @@ export async function POST(request: NextRequest) {
         constructionYear: body.constructionYear ?? null,
         linkAd: body.linkAd?.trim() || null,
         linkAddress: body.linkAddress?.trim() || null,
+        comments: body.comments?.trim() || null,
         agentStakeholderId: body.agentStakeholderId ?? null,
       },
     });
@@ -226,6 +227,7 @@ export async function PUT(request: NextRequest) {
         constructionYear: body.constructionYear ?? null,
         linkAd: body.linkAd?.trim() || null,
         linkAddress: body.linkAddress?.trim() || null,
+        comments: body.comments?.trim() || null,
         agentStakeholderId: body.agentStakeholderId ?? null,
       },
     });

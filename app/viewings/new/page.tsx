@@ -6,6 +6,7 @@ import { ArrowLeftIcon } from "@/app/components/icons";
 export default async function NewViewingPage() {
   const stakeholders = await prisma.stakeholder.findMany({
     where: {
+      type: 5,
       isDeleted: false,
     },
     orderBy: {

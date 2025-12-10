@@ -35,6 +35,7 @@ model Apartment {
 model Stakeholder {
   id        Int     @id @default(autoincrement())
   name      String  @db.NVarChar(255)
+  type      Int?    @map("Type")
   isDeleted Boolean @default(false) @map("IsDeleted")
 
   viewingsAsAgent Viewing[] @relation("AgentStakeholder")
@@ -54,6 +55,7 @@ model Viewing {
   constructionYear  Int?      @map("ConstructionYear") @db.SmallInt
   linkAd            String?   @map("LinkAd") @db.NVarChar(500)
   linkAddress       String?   @map("LinkAddress") @db.NVarChar(500)
+  comments          String?   @map("Comments") @db.NVarChar(500)
   agentStakeholderId Int?     @map("AgentStakeholderId")
   isDeleted         Boolean   @default(false) @map("IsDeleted")
 

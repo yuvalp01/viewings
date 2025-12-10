@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { EditIcon, TrashIcon, ExternalLinkIcon } from "@/app/components/icons";
+import { useState, useEffect } from "react";
+import { EditIcon, TrashIcon, ExternalLinkIcon, DocumentIcon, XIcon, UserIcon } from "@/app/components/icons";
 import EditViewingModal from "./EditViewingModal";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 
@@ -35,6 +35,7 @@ interface Viewing {
   constructionYear: number | null;
   linkAd: string | null;
   linkAddress: string | null;
+  comments: string | null;
   agentStakeholderId: number | null;
   agentStakeholder: Stakeholder | null;
 }
@@ -55,6 +56,7 @@ export default function ViewingsTable({
   const [deletingViewingAddress, setDeletingViewingAddress] = useState<
     string | null
   >(null);
+  const [viewingComments, setViewingComments] = useState<string | null>(null);
 
   const handleEditClick = (viewing: Viewing) => {
     setEditingViewing(viewing);
@@ -73,6 +75,37 @@ export default function ViewingsTable({
     setDeletingViewingId(null);
     setDeletingViewingAddress(null);
   };
+
+  const handleViewComments = (comments: string | null) => {
+    setViewingComments(comments);
+  };
+
+  const handleCloseComments = () => {
+    setViewingComments(null);
+  };
+
+  // Handle escape key for comments modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && viewingComments !== null) {
+        handleCloseComments();
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [viewingComments]);
+
+  // Prevent body scroll when comments modal is open
+  useEffect(() => {
+    if (viewingComments !== null) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [viewingComments]);
 
   return (
     <>
@@ -97,6 +130,9 @@ export default function ViewingsTable({
                   Price
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
+                  Price/m
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
                   Bedrooms
                 </th>
                 <th className="hidden px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6 md:table-cell">
@@ -107,6 +143,9 @@ export default function ViewingsTable({
                 </th>
                 <th className="hidden px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6 lg:table-cell">
                   Agent
+                </th>
+                <th className="px-3 py-3 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
+                  Details
                 </th>
                 <th className="px-3 py-3 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
                   Actions
@@ -165,6 +204,17 @@ export default function ViewingsTable({
                         : "-";
                     })()}
                   </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-zinc-900 dark:text-zinc-50 sm:px-6">
+                    {(() => {
+                      const price = toNumber(viewing.price);
+                      const size = toNumber(viewing.size);
+                      if (price !== null && size !== null && size > 0) {
+                        const pricePerM = price / size;
+                        return `€${Math.round(pricePerM).toLocaleString()}/m²`;
+                      }
+                      return "-";
+                    })()}
+                  </td>
                   <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-600 dark:text-zinc-400 sm:px-6">
                     {(() => {
                       const bedrooms = toNumber(viewing.bedrooms);
@@ -190,6 +240,32 @@ export default function ViewingsTable({
                   </td>
                   <td className="hidden px-3 py-4 text-sm text-zinc-600 dark:text-zinc-400 sm:px-6 lg:table-cell">
                     {viewing.agentStakeholder?.name || "-"}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-center text-sm sm:px-6">
+                    <div className="flex items-center justify-center gap-2">
+                      {viewing.comments && viewing.comments.trim() ? (
+                        <button
+                          onClick={() => handleViewComments(viewing.comments)}
+                          className="inline-flex items-center justify-center rounded-lg p-2 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                          title="View comments"
+                          aria-label="View comments"
+                        >
+                          <DocumentIcon className="h-5 w-5" />
+                        </button>
+                      ) : null}
+                      {viewing.agentStakeholder ? (
+                        <span
+                          className="inline-flex items-center justify-center rounded-lg p-2 text-zinc-600 dark:text-zinc-400"
+                          title={`Agent: ${viewing.agentStakeholder.name}`}
+                          aria-label={`Agent: ${viewing.agentStakeholder.name}`}
+                        >
+                          <UserIcon className="h-5 w-5" />
+                        </span>
+                      ) : null}
+                      {!viewing.comments?.trim() && !viewing.agentStakeholder && (
+                        <span className="text-zinc-300 dark:text-zinc-700">-</span>
+                      )}
+                    </div>
                   </td>
                   <td className="whitespace-nowrap px-3 py-4 text-sm sm:px-6">
                     <div className="flex items-center justify-center gap-2">
@@ -234,6 +310,39 @@ export default function ViewingsTable({
           isOpen={deletingViewingId !== null}
           onClose={handleCloseDelete}
         />
+      )}
+
+      {viewingComments !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={handleCloseComments}
+        >
+          <div
+            className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-xl dark:bg-zinc-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900">
+              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+                Details
+              </h2>
+              <button
+                onClick={handleCloseComments}
+                className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                aria-label="Close modal"
+              >
+                <XIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <div className="whitespace-pre-wrap text-sm text-zinc-900 dark:text-zinc-50">
+                {viewingComments}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
