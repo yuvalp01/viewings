@@ -37,6 +37,7 @@ interface FormErrors {
 }
 
 const generateGoogleCalendarLink = (
+  viewingId: number,
   address: string,
   dateTime: Date,
   agentName: string | null,
@@ -49,10 +50,10 @@ const generateGoogleCalendarLink = (
     .replace(/[-:]/g, "")
     .split(".")[0] + "Z";
 
-  // Build title: "Viewing: <Address> (<Agent>)" - only include agent if available
+  // Build title: "Viewing #<id>: <Address> (<Agent>)" - only include agent if available
   const title = agentName
-    ? `Viewing: ${address} (${agentName})`
-    : `Viewing: ${address}`;
+    ? `Viewing #${viewingId}: ${address} (${agentName})`
+    : `Viewing #${viewingId}: ${address}`;
 
   // Build description with conditional sections
   let description = `Viewing for: ${address}`;
@@ -277,6 +278,7 @@ export default function ScheduleVisitModal({
     formData.date.trim() && formData.time.trim() && viewing.address;
   const calendarLink = canGenerateCalendarLink
     ? generateGoogleCalendarLink(
+        viewing.id,
         viewing.address || "",
         new Date(`${formData.date}T${formData.time}`),
         (viewing as any).agentStakeholder?.name || null,
