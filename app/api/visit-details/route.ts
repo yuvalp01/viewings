@@ -209,7 +209,7 @@ export async function PUT(request: NextRequest) {
 
     // Build update data object
     const updateData: any = {
-      isSecurityDoor: body.isSecurityDoor ?? false,
+      isSecurityDoor: body.isSecurityDoor !== undefined ? body.isSecurityDoor : null,
       buildingSecurityDoorsPercent: body.buildingSecurityDoorsPercent ?? null,
       aluminumWindowsLevel: body.aluminumWindowsLevel ?? null,
       renovationKitchenLevel: body.renovationKitchenLevel ?? null,

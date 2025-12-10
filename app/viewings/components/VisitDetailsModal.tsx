@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { XIcon, CheckIcon } from "@/app/components/icons";
+import { XIcon, CheckIcon, CheckCircleIcon } from "@/app/components/icons";
 
 interface QualityLevel {
   id: number;
@@ -22,7 +22,7 @@ interface VisitDetailsModalProps {
 }
 
 interface FormData {
-  isSecurityDoor: boolean;
+  isSecurityDoor: boolean | null;
   buildingSecurityDoorsPercent: string;
   aluminumWindowsLevel: string;
   renovationKitchenLevel: string;
@@ -62,7 +62,7 @@ export default function VisitDetailsModal({
   const [activeTab, setActiveTab] = useState<string>("building");
 
   const [formData, setFormData] = useState<FormData>({
-    isSecurityDoor: false,
+    isSecurityDoor: null,
     buildingSecurityDoorsPercent: "",
     aluminumWindowsLevel: "",
     renovationKitchenLevel: "",
@@ -75,6 +75,73 @@ export default function VisitDetailsModal({
     comments: "",
   });
 
+  // Calculate completion percentage
+  const completionPercentage = useMemo(() => {
+    const totalFields = 11;
+    let filledFields = 0;
+
+    // isSecurityDoor: only count if not null
+    if (formData.isSecurityDoor !== null) {
+      filledFields++;
+    }
+
+    // String fields: count if not empty after trim
+    const stringFields = [
+      "buildingSecurityDoorsPercent",
+      "aluminumWindowsLevel",
+      "renovationKitchenLevel",
+      "renovationBathroomLevel",
+      "renovationLevel",
+      "viewLevel",
+      "balconyLevel",
+      "buildingLobbyLevel",
+      "buildingMaintenanceLevel",
+      "comments",
+    ];
+
+    stringFields.forEach((field) => {
+      const value = formData[field as keyof FormData];
+      if (typeof value === "string" && value.trim() !== "") {
+        filledFields++;
+      }
+    });
+
+    return Math.round((filledFields / totalFields) * 100);
+  }, [formData]);
+
+  // Ref for three-state checkbox
+  const securityDoorCheckboxRef = useRef<HTMLInputElement>(null);
+
+  // Check if a tab is complete
+  const isTabComplete = useMemo(() => {
+    const tabFields: Record<string, (keyof FormData)[]> = {
+      building: ["buildingLobbyLevel", "buildingMaintenanceLevel"],
+      security: ["isSecurityDoor", "buildingSecurityDoorsPercent"],
+      features: ["aluminumWindowsLevel", "viewLevel", "balconyLevel"],
+      renovation: [
+        "renovationKitchenLevel",
+        "renovationBathroomLevel",
+        "renovationLevel",
+      ],
+      comments: ["comments"],
+    };
+
+    const result: Record<string, boolean> = {};
+
+    Object.entries(tabFields).forEach(([tabId, fields]) => {
+      const allFieldsFilled = fields.every((field) => {
+        const value = formData[field];
+        if (field === "isSecurityDoor") {
+          return value !== null;
+        }
+        return typeof value === "string" && value.trim() !== "";
+      });
+      result[tabId] = allFieldsFilled;
+    });
+
+    return result;
+  }, [formData]);
+
   // Load existing visit details when modal opens
   useEffect(() => {
     if (isOpen && viewing) {
@@ -86,7 +153,7 @@ export default function VisitDetailsModal({
           if (data.success && data.data) {
             const details = data.data;
             setFormData({
-              isSecurityDoor: details.isSecurityDoor ?? false,
+              isSecurityDoor: details.isSecurityDoor ?? null,
               buildingSecurityDoorsPercent: details.buildingSecurityDoorsPercent
                 ? details.buildingSecurityDoorsPercent.toString()
                 : "",
@@ -117,7 +184,7 @@ export default function VisitDetailsModal({
           } else {
             // Reset to empty form
             setFormData({
-              isSecurityDoor: false,
+              isSecurityDoor: null,
               buildingSecurityDoorsPercent: "",
               aluminumWindowsLevel: "",
               renovationKitchenLevel: "",
@@ -199,7 +266,7 @@ export default function VisitDetailsModal({
         },
         body: JSON.stringify({
           viewingId: viewing.id,
-          isSecurityDoor: formData.isSecurityDoor,
+          isSecurityDoor: formData.isSecurityDoor ?? null,
           buildingSecurityDoorsPercent: formData.buildingSecurityDoorsPercent
             ? parseInt(formData.buildingSecurityDoorsPercent)
             : null,
@@ -254,6 +321,39 @@ export default function VisitDetailsModal({
     }
   };
 
+  const handleSecurityDoorChange = () => {
+    setFormData((prev) => {
+      // Cycle through states: null → true → false → null
+      let nextValue: boolean | null;
+      if (prev.isSecurityDoor === null) {
+        nextValue = true;
+      } else if (prev.isSecurityDoor === true) {
+        nextValue = false;
+      } else {
+        nextValue = null;
+      }
+
+      return {
+        ...prev,
+        isSecurityDoor: nextValue,
+      };
+    });
+
+    if (success) {
+      setSuccess(false);
+    }
+  };
+
+  // Update checkbox indeterminate state when formData changes
+  useEffect(() => {
+    if (securityDoorCheckboxRef.current) {
+      securityDoorCheckboxRef.current.indeterminate =
+        formData.isSecurityDoor === null;
+      securityDoorCheckboxRef.current.checked =
+        formData.isSecurityDoor === true;
+    }
+  }, [formData.isSecurityDoor]);
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -261,6 +361,11 @@ export default function VisitDetailsModal({
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
+
+    // Skip default checkbox handling for isSecurityDoor
+    if (name === "isSecurityDoor") {
+      return;
+    }
 
     setFormData((prev) => ({
       ...prev,
@@ -293,17 +398,33 @@ export default function VisitDetailsModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900 sm:px-6">
-          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-            Visit Details
-          </h2>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
-            aria-label="Close modal"
-          >
-            <XIcon className="h-5 w-5" />
-          </button>
+        <div className="sticky top-0 z-10 border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="flex items-center justify-between px-4 py-4 sm:px-6">
+            <div className="flex items-center gap-4 flex-1 min-w-0">
+              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 whitespace-nowrap">
+                Visit Details
+              </h2>
+              {/* Progress Bar */}
+              <div className="flex items-center gap-2 flex-1 min-w-0 max-w-xs">
+                <div className="flex-1 h-2 bg-zinc-200 rounded-full overflow-hidden dark:bg-zinc-800">
+                  <div
+                    className="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-300 ease-out dark:from-green-400 dark:to-green-500"
+                    style={{ width: `${completionPercentage}%` }}
+                  />
+                </div>
+                <span className="text-sm font-medium text-green-600 dark:text-green-400 whitespace-nowrap tabular-nums">
+                  {completionPercentage}%
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 flex-shrink-0"
+              aria-label="Close modal"
+            >
+              <XIcon className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -359,20 +480,31 @@ export default function VisitDetailsModal({
                       { id: "features", label: "Features" },
                       { id: "renovation", label: "Renovation" },
                       { id: "comments", label: "Comments" },
-                    ].map((tab) => (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`whitespace-nowrap px-3 py-3 text-sm font-medium border-b-2 transition-colors ${
-                          activeTab === tab.id
-                            ? "border-zinc-900 text-zinc-900 dark:border-zinc-50 dark:text-zinc-50"
-                            : "border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300 dark:text-zinc-400 dark:hover:text-zinc-300"
-                        }`}
-                      >
-                        {tab.label}
-                      </button>
-                    ))}
+                    ].map((tab) => {
+                      const isComplete = isTabComplete[tab.id];
+                      const isActive = activeTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setActiveTab(tab.id)}
+                          className={`whitespace-nowrap px-3 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+                            isActive
+                              ? isComplete
+                                ? "border-green-600 text-green-700 dark:border-green-400 dark:text-green-300"
+                                : "border-zinc-900 text-zinc-900 dark:border-zinc-50 dark:text-zinc-50"
+                              : isComplete
+                              ? "border-transparent text-green-600 hover:text-green-700 hover:border-green-300 dark:text-green-400 dark:hover:text-green-300"
+                              : "border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300 dark:text-zinc-400 dark:hover:text-zinc-300"
+                          }`}
+                        >
+                          <span>{tab.label}</span>
+                          {isComplete && (
+                            <CheckCircleIcon className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
                   </nav>
                 </div>
               </div>
@@ -435,18 +567,35 @@ export default function VisitDetailsModal({
                   <div className="space-y-4">
                     <div className="flex items-center">
                       <input
+                        ref={securityDoorCheckboxRef}
                         type="checkbox"
                         id="isSecurityDoor"
                         name="isSecurityDoor"
-                        checked={formData.isSecurityDoor}
-                        onChange={handleChange}
+                        checked={formData.isSecurityDoor === true}
+                        onChange={handleSecurityDoorChange}
                         className="h-5 w-5 rounded border-zinc-300 text-zinc-600 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900"
                       />
                       <label
                         htmlFor="isSecurityDoor"
-                        className="ml-3 block text-sm font-medium text-zinc-900 dark:text-zinc-50"
+                        className="ml-3 block text-sm font-medium text-zinc-900 dark:text-zinc-50 cursor-pointer"
+                        onClick={handleSecurityDoorChange}
                       >
                         Security Door
+                        {formData.isSecurityDoor === null && (
+                          <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">
+                            (Not specified)
+                          </span>
+                        )}
+                        {formData.isSecurityDoor === false && (
+                          <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">
+                            (No)
+                          </span>
+                        )}
+                        {formData.isSecurityDoor === true && (
+                          <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">
+                            (Yes)
+                          </span>
+                        )}
                       </label>
                     </div>
 
