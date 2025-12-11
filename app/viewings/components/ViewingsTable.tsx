@@ -145,10 +145,10 @@ export default function ViewingsTable({
           <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800">
             <thead className="bg-zinc-50 dark:bg-zinc-800/50">
               <tr>
-                <th className="px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
+                <th className="sticky left-0 z-20 border-r border-zinc-200 bg-zinc-50 px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-400 sm:px-6">
                   Id
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
+                <th className="sticky left-[80px] z-20 border-r border-zinc-200 bg-zinc-50 px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-400 sm:left-[100px] sm:px-6">
                   Address
                 </th>
                 <th className="px-3 py-3 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
@@ -184,12 +184,12 @@ export default function ViewingsTable({
               {viewings.map((viewing) => (
                 <tr
                   key={viewing.id}
-                  className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                  className="group transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
                 >
-                  <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-zinc-900 dark:text-zinc-50 sm:px-6">
+                  <td className="sticky left-0 z-10 whitespace-nowrap border-r border-zinc-200 bg-white px-3 py-4 text-sm font-medium text-zinc-900 transition-colors group-hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:group-hover:bg-zinc-800/50 sm:px-6">
                     {viewing.id}
                   </td>
-                  <td className="px-3 py-4 text-sm text-zinc-900 dark:text-zinc-50 sm:px-6">
+                  <td className="sticky left-[80px] z-10 border-r border-zinc-200 bg-white px-3 py-4 text-sm text-zinc-900 transition-colors group-hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:group-hover:bg-zinc-800/50 sm:left-[100px] sm:px-6">
                     {viewing.linkAddress ? (
                       <a
                         href={viewing.linkAddress}
