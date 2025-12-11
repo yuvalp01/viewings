@@ -7,20 +7,6 @@ import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import ScheduleVisitModal from "./ScheduleVisitModal";
 import VisitDetailsModal from "./VisitDetailsModal";
 
-// Helper function to safely convert to number
-// Values are already serialized from server component, but we keep this for safety
-function toNumber(value: number | null | undefined): number | null {
-  if (value === null || value === undefined) {
-    return null;
-  }
-  if (typeof value === "number") {
-    return value;
-  }
-  // Fallback: try to convert to number (shouldn't happen if serialized correctly)
-  const num = Number(value);
-  return isNaN(num) ? null : num;
-}
-
 interface Stakeholder {
   id: number;
   name: string;
@@ -47,6 +33,17 @@ interface Viewing {
   agentStakeholder: Stakeholder | null;
   viewingDate: Date | string | null;
   viewedByStakeholderId: number | null;
+  // Visit details fields
+  isSecurityDoor: boolean | null;
+  buildingSecurityDoorsPercent: number | null;
+  aluminumWindowsLevel: number | null;
+  renovationKitchenLevel: number | null;
+  renovationBathroomLevel: number | null;
+  renovationLevel: number | null;
+  viewLevel: number | null;
+  balconyLevel: number | null;
+  buildingLobbyLevel: number | null;
+  buildingMaintenanceLevel: number | null;
 }
 
 interface ViewingsTableProps {
@@ -54,6 +51,129 @@ interface ViewingsTableProps {
   stakeholders: Stakeholder[];
   scheduleStakeholders: Stakeholder[];
   qualityLevels: QualityLevel[];
+}
+
+// Helper function to safely convert to number
+// Values are already serialized from server component, but we keep this for safety
+function toNumber(value: number | null | undefined): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value === "number") {
+    return value;
+  }
+  // Fallback: try to convert to number (shouldn't happen if serialized correctly)
+  const num = Number(value);
+  return isNaN(num) ? null : num;
+}
+
+// Calculate completion percentage for visit details
+// Matches the logic from VisitDetailsModal.tsx
+function calculateCompletionPercentage(viewing: Viewing): number {
+  const totalFields = 11;
+  let filledFields = 0;
+
+  // isSecurityDoor: only count if not null
+  if (viewing.isSecurityDoor !== null) {
+    filledFields++;
+  }
+
+  // String/number fields: count if not empty/null
+  const fieldsToCheck = [
+    "buildingSecurityDoorsPercent",
+    "aluminumWindowsLevel",
+    "renovationKitchenLevel",
+    "renovationBathroomLevel",
+    "renovationLevel",
+    "viewLevel",
+    "balconyLevel",
+    "buildingLobbyLevel",
+    "buildingMaintenanceLevel",
+    "comments",
+  ];
+
+  fieldsToCheck.forEach((field) => {
+    const value = viewing[field as keyof Viewing];
+    if (field === "comments") {
+      // Comments is a string, check if not empty after trim
+      if (typeof value === "string" && value.trim() !== "") {
+        filledFields++;
+      }
+    } else {
+      // Other fields are numbers, check if not null
+      if (value !== null && value !== undefined) {
+        filledFields++;
+      }
+    }
+  });
+
+  return Math.round((filledFields / totalFields) * 100);
+}
+
+// ProgressClipboardIcon component with circular progress ring
+interface ProgressClipboardIconProps {
+  completionPercentage: number;
+  className?: string;
+}
+
+function ProgressClipboardIcon({
+  completionPercentage,
+  className = "h-5 w-5",
+}: ProgressClipboardIconProps) {
+  // SVG dimensions for the progress ring
+  const size = 24; // SVG viewBox size
+  const center = size / 2;
+  const radius = 10; // Radius of the progress ring
+  const circumference = 2 * Math.PI * radius;
+  const strokeWidth = 1.5; // Ring thickness
+  
+  // Calculate stroke-dashoffset for progress
+  const offset = circumference * (1 - completionPercentage / 100);
+  
+  // Icon color: green when 100% complete, blue otherwise
+  const iconColor = completionPercentage === 100 
+    ? "text-green-600 dark:text-green-400" 
+    : "text-blue-600 dark:text-blue-400";
+
+  return (
+    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+      {/* Progress ring SVG */}
+      <svg
+        className="absolute inset-0 -rotate-90"
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+      >
+        {/* Background circle */}
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          className="text-zinc-200 dark:text-zinc-700"
+        />
+        {/* Progress arc */}
+        {completionPercentage > 0 && (
+          <circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            className="text-green-500 dark:text-green-400 transition-all duration-300"
+          />
+        )}
+      </svg>
+      {/* Clipboard icon */}
+      <ClipboardIcon className={`${className} relative z-10 ${iconColor} transition-colors duration-300`} />
+    </div>
+  );
 }
 
 export default function ViewingsTable({
@@ -297,10 +417,10 @@ export default function ViewingsTable({
                       <button
                         onClick={() => handleVisitDetailsClick(viewing)}
                         className="inline-flex items-center justify-center rounded-lg p-2 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
-                        title="Visit details"
-                        aria-label="Visit details"
+                        title={`Visit details (${calculateCompletionPercentage(viewing)}% complete)`}
+                        aria-label={`Visit details (${calculateCompletionPercentage(viewing)}% complete)`}
                       >
-                        <ClipboardIcon className="h-5 w-5" />
+                        <ProgressClipboardIcon completionPercentage={calculateCompletionPercentage(viewing)} />
                       </button>
                       <button
                         onClick={() => handleScheduleVisit(viewing)}

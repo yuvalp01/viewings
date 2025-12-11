@@ -90,6 +90,17 @@ export default async function ViewingsPage() {
       floor: viewing.floor ? Number(viewing.floor) : null,
       viewingDate: viewingDateStr,
       viewedByStakeholderId: viewing.viewedByStakeholderId ?? null,
+      // Visit details fields
+      isSecurityDoor: viewing.isSecurityDoor ?? null,
+      buildingSecurityDoorsPercent: viewing.buildingSecurityDoorsPercent ?? null,
+      aluminumWindowsLevel: viewing.aluminumWindowsLevel ?? null,
+      renovationKitchenLevel: viewing.renovationKitchenLevel ?? null,
+      renovationBathroomLevel: viewing.renovationBathroomLevel ?? null,
+      renovationLevel: viewing.renovationLevel ?? null,
+      viewLevel: viewing.viewLevel ?? null,
+      balconyLevel: viewing.balconyLevel ?? null,
+      buildingLobbyLevel: viewing.buildingLobbyLevel ?? null,
+      buildingMaintenanceLevel: viewing.buildingMaintenanceLevel ?? null,
     };
   });
 
