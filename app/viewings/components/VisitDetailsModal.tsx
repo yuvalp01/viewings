@@ -112,6 +112,48 @@ export default function VisitDetailsModal({
   // Ref for three-state checkbox
   const securityDoorCheckboxRef = useRef<HTMLInputElement>(null);
 
+  // Get background color class for quality level selects
+  const getQualityLevelBgColor = (value: string): string => {
+    if (!value || value === "") {
+      return "bg-zinc-100 dark:bg-zinc-800";
+    }
+
+    const selectedId = parseInt(value);
+    if (isNaN(selectedId)) {
+      return "bg-zinc-100 dark:bg-zinc-800";
+    }
+
+    // Find the selected quality level by ID
+    const selectedLevel = qualityLevels.find((level) => level.id === selectedId);
+
+    if (!selectedLevel || !selectedLevel.name) {
+      return "bg-zinc-100 dark:bg-zinc-800";
+    }
+
+    // Map quality level names to colors (case-insensitive, handle variations)
+    const levelName = selectedLevel.name.toLowerCase().trim();
+
+    // Bad - light orange
+    if (levelName === "bad" || levelName.includes("bad")) {
+      return "bg-orange-200 dark:bg-orange-900/40";
+    }
+    // Basic - light yellow
+    if (levelName === "basic" || levelName.includes("basic")) {
+      return "bg-yellow-200 dark:bg-yellow-900/40";
+    }
+    // Good - very light green
+    if (levelName === "good" || levelName.includes("good")) {
+      return "bg-green-100 dark:bg-green-900/30";
+    }
+    // Superb - light green
+    if (levelName === "superb" || levelName.includes("superb")) {
+      return "bg-green-200 dark:bg-green-900/40";
+    }
+
+    // Default to gray if name doesn't match
+    return "bg-zinc-100 dark:bg-zinc-800";
+  };
+
   // Check if a tab is complete
   const isTabComplete = useMemo(() => {
     const tabFields: Record<string, (keyof FormData)[]> = {
@@ -526,7 +568,7 @@ export default function VisitDetailsModal({
                         name="buildingLobbyLevel"
                         value={formData.buildingLobbyLevel}
                         onChange={handleChange}
-                        className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                        className={`w-full rounded-lg border border-zinc-300 px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:text-zinc-50 ${getQualityLevelBgColor(formData.buildingLobbyLevel)}`}
                       >
                         <option value="">Select level...</option>
                         {qualityLevels.map((level) => (
@@ -549,7 +591,7 @@ export default function VisitDetailsModal({
                         name="buildingMaintenanceLevel"
                         value={formData.buildingMaintenanceLevel}
                         onChange={handleChange}
-                        className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                        className={`w-full rounded-lg border border-zinc-300 px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:text-zinc-50 ${getQualityLevelBgColor(formData.buildingMaintenanceLevel)}`}
                       >
                         <option value="">Select level...</option>
                         {qualityLevels.map((level) => (
@@ -645,7 +687,7 @@ export default function VisitDetailsModal({
                         name="aluminumWindowsLevel"
                         value={formData.aluminumWindowsLevel}
                         onChange={handleChange}
-                        className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                        className={`w-full rounded-lg border border-zinc-300 px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:text-zinc-50 ${getQualityLevelBgColor(formData.aluminumWindowsLevel)}`}
                       >
                         <option value="">Select level...</option>
                         {qualityLevels.map((level) => (
@@ -668,7 +710,7 @@ export default function VisitDetailsModal({
                         name="viewLevel"
                         value={formData.viewLevel}
                         onChange={handleChange}
-                        className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                        className={`w-full rounded-lg border border-zinc-300 px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:text-zinc-50 ${getQualityLevelBgColor(formData.viewLevel)}`}
                       >
                         <option value="">Select level...</option>
                         {qualityLevels.map((level) => (
@@ -691,7 +733,7 @@ export default function VisitDetailsModal({
                         name="balconyLevel"
                         value={formData.balconyLevel}
                         onChange={handleChange}
-                        className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                        className={`w-full rounded-lg border border-zinc-300 px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:text-zinc-50 ${getQualityLevelBgColor(formData.balconyLevel)}`}
                       >
                         <option value="">Select level...</option>
                         {qualityLevels.map((level) => (
@@ -719,7 +761,7 @@ export default function VisitDetailsModal({
                         name="renovationKitchenLevel"
                         value={formData.renovationKitchenLevel}
                         onChange={handleChange}
-                        className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                        className={`w-full rounded-lg border border-zinc-300 px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:text-zinc-50 ${getQualityLevelBgColor(formData.renovationKitchenLevel)}`}
                       >
                         <option value="">Select level...</option>
                         {qualityLevels.map((level) => (
@@ -742,7 +784,7 @@ export default function VisitDetailsModal({
                         name="renovationBathroomLevel"
                         value={formData.renovationBathroomLevel}
                         onChange={handleChange}
-                        className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                        className={`w-full rounded-lg border border-zinc-300 px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:text-zinc-50 ${getQualityLevelBgColor(formData.renovationBathroomLevel)}`}
                       >
                         <option value="">Select level...</option>
                         {qualityLevels.map((level) => (
@@ -765,7 +807,7 @@ export default function VisitDetailsModal({
                         name="renovationLevel"
                         value={formData.renovationLevel}
                         onChange={handleChange}
-                        className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                        className={`w-full rounded-lg border border-zinc-300 px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:text-zinc-50 ${getQualityLevelBgColor(formData.renovationLevel)}`}
                       >
                         <option value="">Select level...</option>
                         {qualityLevels.map((level) => (
