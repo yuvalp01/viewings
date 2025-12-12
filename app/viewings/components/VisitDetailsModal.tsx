@@ -33,6 +33,7 @@ interface FormData {
   buildingLobbyLevel: string;
   buildingMaintenanceLevel: string;
   comments: string;
+  expectedMinimalRent: string;
 }
 
 interface FormErrors {
@@ -45,6 +46,7 @@ interface FormErrors {
   balconyLevel?: string;
   buildingLobbyLevel?: string;
   buildingMaintenanceLevel?: string;
+  expectedMinimalRent?: string;
 }
 
 export default function VisitDetailsModal({
@@ -73,11 +75,12 @@ export default function VisitDetailsModal({
     buildingLobbyLevel: "",
     buildingMaintenanceLevel: "",
     comments: "",
+    expectedMinimalRent: "",
   });
 
   // Calculate completion percentage
   const completionPercentage = useMemo(() => {
-    const totalFields = 11;
+    const totalFields = 12;
     let filledFields = 0;
 
     // isSecurityDoor: only count if not null
@@ -97,6 +100,7 @@ export default function VisitDetailsModal({
       "buildingLobbyLevel",
       "buildingMaintenanceLevel",
       "comments",
+      "expectedMinimalRent",
     ];
 
     stringFields.forEach((field) => {
@@ -165,7 +169,7 @@ export default function VisitDetailsModal({
         "renovationBathroomLevel",
         "renovationLevel",
       ],
-      comments: ["comments"],
+      comments: ["expectedMinimalRent", "comments"],
     };
 
     const result: Record<string, boolean> = {};
@@ -222,6 +226,9 @@ export default function VisitDetailsModal({
                 ? details.buildingMaintenanceLevel.toString()
                 : "",
               comments: details.comments || "",
+              expectedMinimalRent: details.expectedMinimalRent
+                ? details.expectedMinimalRent.toString()
+                : "",
             });
           } else {
             // Reset to empty form
@@ -237,6 +244,7 @@ export default function VisitDetailsModal({
               buildingLobbyLevel: "",
               buildingMaintenanceLevel: "",
               comments: "",
+              expectedMinimalRent: "",
             });
           }
           setIsLoading(false);
@@ -282,6 +290,13 @@ export default function VisitDetailsModal({
       if (isNaN(percent) || percent < 1 || percent > 100) {
         newErrors.buildingSecurityDoorsPercent =
           "Percentage must be between 1 and 100";
+      }
+    }
+
+    if (formData.expectedMinimalRent.trim()) {
+      const rentNum = parseFloat(formData.expectedMinimalRent);
+      if (isNaN(rentNum) || rentNum < 0) {
+        newErrors.expectedMinimalRent = "Expected minimal rent must be a non-negative number";
       }
     }
 
@@ -335,6 +350,9 @@ export default function VisitDetailsModal({
             ? parseInt(formData.buildingMaintenanceLevel)
             : null,
           comments: formData.comments.trim() || null,
+          expectedMinimalRent: formData.expectedMinimalRent.trim()
+            ? parseFloat(formData.expectedMinimalRent)
+            : null,
         }),
       });
 
@@ -822,22 +840,52 @@ export default function VisitDetailsModal({
 
                 {/* Comments Tab */}
                 {activeTab === "comments" && (
-                  <div>
-                    <label
-                      htmlFor="comments"
-                      className="block text-sm font-medium text-zinc-900 dark:text-zinc-50 mb-2"
-                    >
-                      Comments
-                    </label>
-                    <textarea
-                      id="comments"
-                      name="comments"
-                      value={formData.comments}
-                      onChange={handleChange}
-                      rows={6}
-                      className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm transition-colors text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder-zinc-500"
-                      placeholder="Enter any additional comments or notes..."
-                    />
+                  <div className="space-y-4">
+                    <div>
+                      <label
+                        htmlFor="expectedMinimalRent"
+                        className="block text-sm font-medium text-zinc-900 dark:text-zinc-50 mb-2"
+                      >
+                        Expected Minimal Rent
+                      </label>
+                      <input
+                        type="number"
+                        id="expectedMinimalRent"
+                        name="expectedMinimalRent"
+                        value={formData.expectedMinimalRent}
+                        onChange={handleChange}
+                        min="0"
+                        step="0.01"
+                        className={`w-full rounded-lg border px-4 py-3 text-sm transition-colors ${
+                          errors.expectedMinimalRent
+                            ? "border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20"
+                            : "border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900"
+                        } text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:text-zinc-50 dark:placeholder-zinc-500`}
+                        placeholder="e.g., 1200"
+                      />
+                      {errors.expectedMinimalRent && (
+                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                          {errors.expectedMinimalRent}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="comments"
+                        className="block text-sm font-medium text-zinc-900 dark:text-zinc-50 mb-2"
+                      >
+                        Comments
+                      </label>
+                      <textarea
+                        id="comments"
+                        name="comments"
+                        value={formData.comments}
+                        onChange={handleChange}
+                        rows={6}
+                        className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm transition-colors text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder-zinc-500"
+                        placeholder="Enter any additional comments or notes..."
+                      />
+                    </div>
                   </div>
                 )}
               </div>

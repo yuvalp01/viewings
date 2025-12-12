@@ -13,6 +13,16 @@ function validateVisitDetailsData(body: any): { error?: string } {
     }
   }
 
+  // Validate expectedMinimalRent if provided
+  if (body.expectedMinimalRent !== null && body.expectedMinimalRent !== undefined) {
+    if (typeof body.expectedMinimalRent !== "number") {
+      return { error: "Expected minimal rent must be a number" };
+    }
+    if (body.expectedMinimalRent < 0) {
+      return { error: "Expected minimal rent must be non-negative" };
+    }
+  }
+
   // Validate quality level IDs if provided
   const qualityLevelFields = [
     "aluminumWindowsLevel",
@@ -91,6 +101,7 @@ export async function GET(request: NextRequest) {
         buildingLobbyLevel: true,
         buildingMaintenanceLevel: true,
         comments: true,
+        expectedMinimalRent: true,
       },
     });
 
@@ -220,6 +231,7 @@ export async function PUT(request: NextRequest) {
       buildingLobbyLevel: body.buildingLobbyLevel ?? null,
       buildingMaintenanceLevel: body.buildingMaintenanceLevel ?? null,
       comments: body.comments?.trim() || null,
+      expectedMinimalRent: body.expectedMinimalRent ?? null,
     };
 
     // Update viewing record with visit details
@@ -242,6 +254,7 @@ export async function PUT(request: NextRequest) {
         buildingLobbyLevel: true,
         buildingMaintenanceLevel: true,
         comments: true,
+        expectedMinimalRent: true,
       },
     });
     // #region agent log

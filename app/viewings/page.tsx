@@ -1,15 +1,44 @@
+import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import Button from "@/app/components/Button";
-import { PlusIcon, HomeIcon } from "@/app/components/icons";
+import { PlusIcon, HomeIcon, CalendarCheckIcon } from "@/app/components/icons";
 import RefreshButton from "./components/RefreshButton";
+import ScheduledVisitsFilter from "./components/ScheduledVisitsFilter";
 import ViewingsTable from "./components/ViewingsTable";
 
 export const dynamic = 'force-dynamic';
-export default async function ViewingsPage() {
+
+interface ViewingsPageProps {
+  searchParams: Promise<{ filter?: string }> | { filter?: string };
+}
+
+export default async function ViewingsPage(props: ViewingsPageProps) {
+  // Handle both Promise and direct object for searchParams (Next.js compatibility)
+  const searchParams = await Promise.resolve(props.searchParams);
+  
+  // Calculate date threshold: 7 days ago from now
+  // Use local time to match user's timezone expectations
+  const now = new Date();
+  const sevenDaysAgo = new Date(now);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  // Set to start of day (midnight) for consistent comparison
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+
+  // Build where clause based on filter
+  const whereClause: any = {
+    isDeleted: false,
+  };
+
+  // Apply filter if "scheduled" filter is active
+  if (searchParams?.filter === "scheduled") {
+    whereClause.viewingDate = {
+      not: null,
+      gte: sevenDaysAgo,
+    };
+  }
+
   const viewings = await prisma.viewing.findMany({
-    where: {
-      isDeleted: false,
-    },
+    where: whereClause,
     orderBy: {
       id: "desc",
     },
@@ -101,6 +130,7 @@ export default async function ViewingsPage() {
       balconyLevel: viewing.balconyLevel ?? null,
       buildingLobbyLevel: viewing.buildingLobbyLevel ?? null,
       buildingMaintenanceLevel: viewing.buildingMaintenanceLevel ?? null,
+      expectedMinimalRent: viewing.expectedMinimalRent ? Number(viewing.expectedMinimalRent) : null,
     };
   });
 
@@ -113,10 +143,15 @@ export default async function ViewingsPage() {
               Viewings
             </h1>
             <p className="mt-2 text-lg text-zinc-600 dark:text-zinc-400">
-              View all viewing records
+              {searchParams?.filter === "scheduled" 
+                ? "Showing scheduled visits (past week and future)"
+                : "View all viewing records"}
             </p>
           </div>
           <div className="flex gap-4">
+            <Suspense fallback={<div className="w-12 h-12" />}>
+              <ScheduledVisitsFilter />
+            </Suspense>
             <RefreshButton />
             <Button
               href="/viewings/new"
@@ -148,9 +183,17 @@ export default async function ViewingsPage() {
           <ViewingsTable viewings={serializedViewings} stakeholders={stakeholders} scheduleStakeholders={scheduleStakeholders} qualityLevels={qualityLevels} />
         )}
 
-        <div className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
-          Showing {viewings.length} viewing
-          {viewings.length !== 1 ? "s" : ""}
+        <div className="mt-4 flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+          <span>
+            Showing {viewings.length} viewing
+            {viewings.length !== 1 ? "s" : ""}
+          </span>
+          {searchParams?.filter === "scheduled" && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300">
+              <CalendarCheckIcon className="h-3 w-3" />
+              Filtered
+            </span>
+          )}
         </div>
       </main>
     </div>

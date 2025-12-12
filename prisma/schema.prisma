@@ -82,6 +82,7 @@ model Viewing {
   balconyLevel                 Int?    @map("BalconyLevel") @db.TinyInt
   buildingLobbyLevel          Int?    @map("BuildingLobbyLevel") @db.TinyInt
   buildingMaintenanceLevel     Int?    @map("BuildingMaintenanceLevel") @db.TinyInt
+  expectedMinimalRent          Decimal? @map("ExpectedMinimalRent") @db.Decimal(18, 2)
 
   agentStakeholder Stakeholder? @relation("AgentStakeholder", fields: [agentStakeholderId], references: [id])
   viewedByStakeholder Stakeholder? @relation("ViewedByStakeholder", fields: [viewedByStakeholderId], references: [id], onDelete: NoAction, onUpdate: NoAction)

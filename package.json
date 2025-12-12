@@ -6,13 +6,16 @@
     "node": ">=24.0.0",
     "npm": ">=10.0.0"
   },
-  "scripts": {
-    "dev": "next dev",
-    "build": "prisma generate && next build",
-    "start": "next start",
-    "lint": "eslint",
-    "postinstall": "prisma generate"
-  },
+"scripts": {
+  "dev": "next dev -p 3000",
+  "kill-ports": "for port in {3000..3099}; do lsof -ti:\\$port | xargs kill -9 2>/dev/null || true; done",
+  "dev:clean": "npm run kill-ports && npm run dev",
+  "build": "prisma generate && next build",
+  "start": "next start",
+  "lint": "eslint",
+  "postinstall": "prisma generate"
+},
+
   "dependencies": {
     "@prisma/adapter-mssql": "^7.1.0",
     "@prisma/client": "^7.1.0",

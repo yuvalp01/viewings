@@ -174,13 +174,6 @@ export default function ScheduleVisitModal({
 
     if (!formData.date.trim()) {
       newErrors.date = "Date is required";
-    } else {
-      const selectedDate = new Date(formData.date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (selectedDate < today) {
-        newErrors.date = "Date cannot be in the past";
-      }
     }
 
     if (!formData.time.trim()) {
@@ -343,7 +336,6 @@ export default function ScheduleVisitModal({
                   name="date"
                   value={formData.date}
                   onChange={handleChange}
-                  min={new Date().toISOString().split("T")[0]}
                   className={`w-full rounded-lg border px-4 py-2 text-sm transition-colors ${
                     errors.date
                       ? "border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20"

@@ -412,3 +412,97 @@ export function ClipboardIcon({
   );
 }
 
+export function ElevatorDoorsIcon({
+  className = "h-4 w-4",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {/* Elevator door frame */}
+      <rect
+        x="6"
+        y="4"
+        width="12"
+        height="16"
+        rx="1"
+        strokeWidth={2}
+        stroke="currentColor"
+        fill="none"
+      />
+      {/* Left door vertical line */}
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 4v16"
+      />
+      {/* Right door vertical line */}
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M15 4v16"
+      />
+    </svg>
+  );
+}
+
+export function NoElevatorIcon({
+  className = "h-4 w-4",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {/* Elevator door frame */}
+      <rect
+        x="6"
+        y="4"
+        width="12"
+        height="16"
+        rx="1"
+        strokeWidth={2}
+        stroke="currentColor"
+        fill="none"
+        opacity="0.5"
+      />
+      {/* Left door vertical line */}
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 4v16"
+        opacity="0.5"
+      />
+      {/* Right door vertical line */}
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M15 4v16"
+        opacity="0.5"
+      />
+      {/* Diagonal slash */}
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2.5}
+        d="M7 5l10 14M17 5l-10 14"
+      />
+    </svg>
+  );
+}
+

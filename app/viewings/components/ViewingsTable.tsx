@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { EditIcon, TrashIcon, ExternalLinkIcon, DocumentIcon, XIcon, UserIcon, CalendarIcon, CalendarCheckIcon, ClipboardIcon } from "@/app/components/icons";
+import { EditIcon, TrashIcon, ExternalLinkIcon, DocumentIcon, XIcon, UserIcon, CalendarIcon, CalendarCheckIcon, ClipboardIcon, ElevatorDoorsIcon, NoElevatorIcon } from "@/app/components/icons";
 import EditViewingModal from "./EditViewingModal";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import ScheduleVisitModal from "./ScheduleVisitModal";
@@ -44,6 +44,7 @@ interface Viewing {
   balconyLevel: number | null;
   buildingLobbyLevel: number | null;
   buildingMaintenanceLevel: number | null;
+  expectedMinimalRent: number | null;
 }
 
 interface ViewingsTableProps {
@@ -70,7 +71,7 @@ function toNumber(value: number | null | undefined): number | null {
 // Calculate completion percentage for visit details
 // Matches the logic from VisitDetailsModal.tsx
 function calculateCompletionPercentage(viewing: Viewing): number {
-  const totalFields = 11;
+  const totalFields = 12;
   let filledFields = 0;
 
   // isSecurityDoor: only count if not null
@@ -89,6 +90,7 @@ function calculateCompletionPercentage(viewing: Viewing): number {
     "balconyLevel",
     "buildingLobbyLevel",
     "buildingMaintenanceLevel",
+    "expectedMinimalRent",
     "comments",
   ];
 
@@ -262,16 +264,16 @@ export default function ViewingsTable({
     <>
       <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800">
+          <table className="w-full divide-y divide-zinc-200 dark:divide-zinc-800" style={{ tableLayout: 'auto' }}>
             <thead className="bg-zinc-50 dark:bg-zinc-800/50">
               <tr>
-                <th className="sticky left-0 z-20 border-r border-zinc-200 bg-zinc-50 px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-400 sm:px-6">
+                <th className="sticky left-0 z-20 w-16 border-r border-zinc-200 bg-zinc-50 px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-400 sm:w-20 sm:px-6">
                   Id
                 </th>
-                <th className="sticky left-[80px] z-20 border-r border-zinc-200 bg-zinc-50 px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-400 sm:left-[100px] sm:px-6">
+                <th className="sticky left-16 z-20 w-[200px] max-w-[200px] border-r border-zinc-200 bg-zinc-50 px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-400 sm:left-20 sm:px-6" style={{ boxSizing: 'border-box' }}>
                   Address
                 </th>
-                <th className="px-3 py-3 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
+                <th className="relative z-10 w-20 min-w-[5rem] px-4 py-3 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
                   Ad
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
@@ -289,8 +291,8 @@ export default function ViewingsTable({
                 <th className="hidden px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6 md:table-cell">
                   Floor
                 </th>
-                <th className="hidden px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6 lg:table-cell">
-                  Elevator
+                <th className="px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
+                  Expected Rent
                 </th>
                 <th className="px-3 py-3 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
                   Details
@@ -306,24 +308,27 @@ export default function ViewingsTable({
                   key={viewing.id}
                   className="group transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
                 >
-                  <td className="sticky left-0 z-10 whitespace-nowrap border-r border-zinc-200 bg-white px-3 py-4 text-sm font-medium text-zinc-900 transition-colors group-hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:group-hover:bg-zinc-800/50 sm:px-6">
+                  <td className="sticky left-0 z-10 w-16 whitespace-nowrap border-r border-zinc-200 bg-white px-3 py-4 text-sm font-medium text-zinc-900 transition-colors group-hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:group-hover:bg-zinc-800/50 sm:w-20 sm:px-6">
                     {viewing.id}
                   </td>
-                  <td className="sticky left-[80px] z-10 border-r border-zinc-200 bg-white px-3 py-4 text-sm text-zinc-900 transition-colors group-hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:group-hover:bg-zinc-800/50 sm:left-[100px] sm:px-6">
-                    {viewing.linkAddress ? (
-                      <a
-                        href={viewing.linkAddress}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
-                      >
-                        {viewing.address}
-                      </a>
-                    ) : (
-                      viewing.address
-                    )}
+                  <td className="sticky left-16 z-10 w-[200px] max-w-[200px] border-r border-zinc-200 bg-white px-3 py-4 text-sm text-zinc-900 transition-colors group-hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:group-hover:bg-zinc-800/50 sm:left-20 sm:px-6" style={{ boxSizing: 'border-box' }}>
+                    <div className="truncate">
+                      {viewing.linkAddress ? (
+                        <a
+                          href={viewing.linkAddress}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                          title={viewing.address || undefined}
+                        >
+                          {viewing.address}
+                        </a>
+                      ) : (
+                        <span title={viewing.address || undefined}>{viewing.address}</span>
+                      )}
+                    </div>
                   </td>
-                  <td className="whitespace-nowrap px-3 py-4 text-center text-sm sm:px-6">
+                  <td className="relative z-10 w-20 min-w-[5rem] whitespace-nowrap px-4 py-4 text-center text-sm sm:px-6">
                     {viewing.linkAd ? (
                       <a
                         href={viewing.linkAd}
@@ -358,7 +363,7 @@ export default function ViewingsTable({
                       const size = toNumber(viewing.size);
                       if (price !== null && size !== null && size > 0) {
                         const pricePerM = price / size;
-                        return `€${Math.round(pricePerM).toLocaleString()}/m²`;
+                        return `€${Math.round(pricePerM).toLocaleString()}`;
                       }
                       return "-";
                     })()}
@@ -370,21 +375,29 @@ export default function ViewingsTable({
                     })()}
                   </td>
                   <td className="hidden whitespace-nowrap px-3 py-4 text-sm text-zinc-600 dark:text-zinc-400 sm:px-6 md:table-cell">
-                    {(() => {
-                      const floor = toNumber(viewing.floor);
-                      return floor !== null ? floor : "-";
-                    })()}
+                    <div className="flex items-center gap-2">
+                      {(() => {
+                        const floor = toNumber(viewing.floor);
+                        return floor !== null ? floor : "-";
+                      })()}
+                      {viewing.isElevator ? (
+                        <span className="inline-flex items-center justify-center rounded-full bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300" title="Elevator available">
+                          <ElevatorDoorsIcon className="h-3 w-3" />
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center justify-center rounded-full bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-300" title="No elevator">
+                          <NoElevatorIcon className="h-3 w-3" />
+                        </span>
+                      )}
+                    </div>
                   </td>
-                  <td className="hidden whitespace-nowrap px-3 py-4 text-sm sm:px-6 lg:table-cell">
-                    {viewing.isElevator ? (
-                      <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                        Yes
-                      </span>
-                    ) : (
-                      <span className="text-zinc-400 dark:text-zinc-500">
-                        No
-                      </span>
-                    )}
+                  <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-zinc-900 dark:text-zinc-50 sm:px-6">
+                    {(() => {
+                      const rent = toNumber(viewing.expectedMinimalRent);
+                      return rent !== null
+                        ? `€${rent.toLocaleString()}`
+                        : "-";
+                    })()}
                   </td>
                   <td className="whitespace-nowrap px-3 py-4 text-center text-sm sm:px-6">
                     <div className="flex items-center justify-center gap-2">
