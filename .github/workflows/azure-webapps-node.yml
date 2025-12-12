@@ -34,12 +34,29 @@ jobs:
         run: npm run build
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Prepare deployment package
+        run: |
+          mkdir -p deploy
+          # Copy standalone build output
+          cp -r .next/standalone/* deploy/
+          # Copy public folder (required for static assets)
+          cp -r public deploy/public
+          # Copy .next/static (required for static assets)
+          mkdir -p deploy/.next
+          cp -r .next/static deploy/.next/static
+          # Copy package.json for start script
+          cp package.json deploy/
+          # Copy Prisma schema and generated client
+          cp -r prisma deploy/prisma
+          cp -r node_modules/.prisma deploy/node_modules/.prisma || true
+  
   
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: .
+          path: deploy
 
 
   deploy:
@@ -54,11 +71,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-app
+          path: deploy
       
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: "viewings"   # exact name of your Web App
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_VIEWINGS }}
-          package: .
+          package: ./deploy
          
