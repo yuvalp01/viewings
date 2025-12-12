@@ -47,9 +47,6 @@ jobs:
           cp -r .next/static deploy/.next/static
           # Copy package.json for start script
           cp package.json deploy/
-          # Copy Prisma schema and generated client
-          cp -r prisma deploy/prisma
-          cp -r node_modules/.prisma deploy/node_modules/.prisma || true
   
   
       - name: Upload artifact for deployment job
