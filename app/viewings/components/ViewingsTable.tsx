@@ -292,7 +292,7 @@ export default function ViewingsTable({
                   Floor
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
-                  Expected Rent
+                  Rent
                 </th>
                 <th className="px-3 py-3 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-6">
                   Details
