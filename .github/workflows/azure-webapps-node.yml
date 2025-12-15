@@ -35,30 +35,49 @@ jobs:
         run: npm run build
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
+      
       - name: Prepare deployment package
         run: |
-          APP_NAME=cursor-test5
+          set -euo pipefail
+      
           OUT_DIR=deploy
-          mkdir -p $OUT_DIR/.next   
-          
-          # Copy standalone build output
-          echo "Copy standalone server (server.js + minimal node_modules)"
-          cp -r .next/standalone/projects/$APP_NAME/* $OUT_DIR/
-
-          # Copy static folder (required for static assets)
+          rm -rf "$OUT_DIR"
+          mkdir -p "$OUT_DIR/.next"
+      
+          echo "Looking for standalone server.js..."
+          STANDALONE_SERVER="$(find .next/standalone -name server.js -type f | head -n 1 || true)"
+      
+          if [ -z "$STANDALONE_SERVER" ]; then
+            echo "ERROR: standalone server.js not found. Is next.config.js set to output: 'standalone'?"
+            echo "Contents of .next for debugging:"
+            ls -la .next || true
+            echo "Contents of .next/standalone for debugging:"
+            ls -la .next/standalone || true
+            exit 1
+          fi
+      
+          STANDALONE_ROOT="$(dirname "$STANDALONE_SERVER")"
+          echo "Found standalone at: $STANDALONE_ROOT"
+      
+          echo "Copy standalone runtime (server.js + minimal node_modules)"
+          cp -R "$STANDALONE_ROOT/"* "$OUT_DIR/"
+      
           echo "Copy Next.js static assets (CSS/JS)"
-          cp -R .next/static $OUT_DIR/.next/static
-
-          # Copy public folder 
+          cp -R .next/static "$OUT_DIR/.next/static"
+      
+          echo "Copy BUILD_ID"
+          cp -f .next/BUILD_ID "$OUT_DIR/.next/BUILD_ID"
+      
+          echo "Copy required server files (.next/server)"
+          cp -R .next/server "$OUT_DIR/.next/server"
+      
           echo "Copy public assets"
-          cp -R public $OUT_DIR/public
-          
-          # Copy server folder 
-          echo "Copy Next.js required server files (App Router manifests)"
-          cp -R .next/server $OUT_DIR/.next/server
-  
-  
+          cp -R public "$OUT_DIR/public"
+      
+          echo "Deployment package ready:"
+          find "$OUT_DIR" -maxdepth 3 -type f | head -n 50
+      
+        
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
