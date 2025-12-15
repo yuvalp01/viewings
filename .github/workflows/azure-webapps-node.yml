@@ -45,34 +45,29 @@ jobs:
           mkdir -p "$OUT_DIR/.next"
       
           echo "Find standalone server.js..."
-          STANDALONE_SERVER="$(find .next/standalone -name server.js -type f | head -n 1 || true)"
-          if [ -z "$STANDALONE_SERVER" ]; then
-            echo "ERROR: standalone server.js not found. Ensure next.config has output: 'standalone'."
-            ls -la .next || true
-            ls -la .next/standalone || true
-            exit 1
-          fi
+          STANDALONE_SERVER="$(find .next/standalone -name server.js -type f | head -n 1)"
           STANDALONE_ROOT="$(dirname "$STANDALONE_SERVER")"
           echo "Standalone root: $STANDALONE_ROOT"
       
-          echo "Copy standalone runtime"
+          echo "Copy standalone runtime (includes minimal node_modules with next)"
           cp -R "$STANDALONE_ROOT/"* "$OUT_DIR/"
       
-          echo "Copy Next static"
+          echo "Copy Next static + server + BUILD_ID"
           cp -R .next/static "$OUT_DIR/.next/static"
-      
-          echo "Copy Next server folder (required)"
           cp -R .next/server "$OUT_DIR/.next/server"
-      
-          echo "Copy BUILD_ID (required)"
           cp -f .next/BUILD_ID "$OUT_DIR/.next/BUILD_ID"
       
           echo "Copy public"
           cp -R public "$OUT_DIR/public"
-   
+  
           echo "Done. Listing deploy:"
           ls -la "$OUT_DIR"
           ls -la "$OUT_DIR/.next"
+      
+          echo "Sanity check:"
+          test -d "$OUT_DIR/node_modules/next" && echo "OK: next exists" || (echo "ERROR: next missing in deploy/node_modules" && exit 1)
+      
+
 
         
       - name: Upload artifact for deployment job
