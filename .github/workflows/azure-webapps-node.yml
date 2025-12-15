@@ -69,7 +69,7 @@ jobs:
       
           echo "Copy public"
           cp -R public "$OUT_DIR/public"
-      
+   
           echo "Done. Listing deploy:"
           ls -la "$OUT_DIR"
           ls -la "$OUT_DIR/.next"
@@ -80,6 +80,7 @@ jobs:
         with:
           name: node-app
           path: deploy
+          include-hidden-files: true
 
 
   deploy:
