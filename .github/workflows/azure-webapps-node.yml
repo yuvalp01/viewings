@@ -44,39 +44,36 @@ jobs:
           rm -rf "$OUT_DIR"
           mkdir -p "$OUT_DIR/.next"
       
-          echo "Looking for standalone server.js..."
+          echo "Find standalone server.js..."
           STANDALONE_SERVER="$(find .next/standalone -name server.js -type f | head -n 1 || true)"
-      
           if [ -z "$STANDALONE_SERVER" ]; then
-            echo "ERROR: standalone server.js not found. Is next.config.js set to output: 'standalone'?"
-            echo "Contents of .next for debugging:"
+            echo "ERROR: standalone server.js not found. Ensure next.config has output: 'standalone'."
             ls -la .next || true
-            echo "Contents of .next/standalone for debugging:"
             ls -la .next/standalone || true
             exit 1
           fi
-      
           STANDALONE_ROOT="$(dirname "$STANDALONE_SERVER")"
-          echo "Found standalone at: $STANDALONE_ROOT"
+          echo "Standalone root: $STANDALONE_ROOT"
       
-          echo "Copy standalone runtime (server.js + minimal node_modules)"
+          echo "Copy standalone runtime"
           cp -R "$STANDALONE_ROOT/"* "$OUT_DIR/"
       
-          echo "Copy Next.js static assets (CSS/JS)"
+          echo "Copy Next static"
           cp -R .next/static "$OUT_DIR/.next/static"
       
-          echo "Copy BUILD_ID"
-          cp -f .next/BUILD_ID "$OUT_DIR/.next/BUILD_ID"
-      
-          echo "Copy required server files (.next/server)"
+          echo "Copy Next server folder (required)"
           cp -R .next/server "$OUT_DIR/.next/server"
       
-          echo "Copy public assets"
+          echo "Copy BUILD_ID (required)"
+          cp -f .next/BUILD_ID "$OUT_DIR/.next/BUILD_ID"
+      
+          echo "Copy public"
           cp -R public "$OUT_DIR/public"
       
-          echo "Deployment package ready:"
-          find "$OUT_DIR" -maxdepth 3 -type f | head -n 50
-      
+          echo "Done. Listing deploy:"
+          ls -la "$OUT_DIR"
+          ls -la "$OUT_DIR/.next"
+
         
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
