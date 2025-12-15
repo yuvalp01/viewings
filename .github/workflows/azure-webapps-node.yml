@@ -53,10 +53,7 @@ jobs:
           cp package.json "$OUT_DIR/package.json"
           cp package-lock.json "$OUT_DIR/package-lock.json"
       
-          echo "Copy production node_modules"
-          cp -R node_modules "$OUT_DIR/node_modules"
-      
-          echo "Copy Prisma schema (needed for Prisma Client)"
+          echo "Copy Prisma schema (needed for Prisma Client generation)"
           cp -R prisma "$OUT_DIR/prisma"
       
           echo "Done. Listing deploy:"
@@ -64,8 +61,12 @@ jobs:
           ls -la "$OUT_DIR/.next"
       
           echo "Sanity checks:"
-          test -d "$OUT_DIR/node_modules/next" && echo "OK: next exists" || (echo "ERROR: next missing in deploy/node_modules" && exit 1)
           test -d "$OUT_DIR/.next" && echo "OK: .next directory exists" || (echo "ERROR: .next directory missing" && exit 1)
+          test -f "$OUT_DIR/package.json" && echo "OK: package.json exists" || (echo "ERROR: package.json missing" && exit 1)
+          test -d "$OUT_DIR/prisma" && echo "OK: prisma directory exists" || (echo "ERROR: prisma directory missing" && exit 1)
+          
+          echo "Package size check:"
+          du -sh "$OUT_DIR" || true
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4

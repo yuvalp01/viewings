@@ -58,15 +58,25 @@ Set the following application settings (environment variables):
 
 3. Click **Save** to apply changes
 
-### 4. Build Configuration (Optional)
+### 4. Enable Build During Deployment (REQUIRED)
 
-If you want Azure to install dependencies during deployment (instead of packaging them):
+**IMPORTANT**: The deployment package does NOT include `node_modules` to keep the package size small (<50 MB instead of 268+ MB). Azure must install dependencies during deployment.
 
 1. Go to Azure Portal → Your App Service → Configuration → General settings
 2. Set **SCM_DO_BUILD_DURING_DEPLOYMENT** to `true`
-3. This will run `npm install` on Azure after deployment
+3. This will run `npm install --production` on Azure after deployment
+4. The `postinstall` script in `package.json` will automatically generate Prisma Client
 
-**Note**: The current workflow packages `node_modules` in the deployment artifact, so this setting is optional. If enabled, Azure will reinstall dependencies, which ensures Prisma Client is generated via the `postinstall` script.
+**Why this is required**: 
+- The deployment package excludes `node_modules` to avoid Azure deployment size limits
+- Azure will automatically install production dependencies when this setting is enabled
+- Prisma Client is generated via the `postinstall` hook in `package.json`
+
+**Alternative**: If you prefer to install dependencies manually, you can set the startup command to:
+```
+npm install --production && npm start
+```
+However, this is slower as it runs on every restart.
 
 ### 5. Verify Deployment
 
@@ -105,7 +115,8 @@ After deployment:
    - Installs dependencies (`npm ci`)
    - Generates Prisma Client (`npx prisma generate`)
    - Builds Next.js app (`npm run build`)
-   - Packages deployment artifacts (`.next`, `public`, `package.json`, `node_modules`, `prisma`)
+   - Packages deployment artifacts (`.next`, `public`, `package.json`, `package-lock.json`, `prisma`)
+   - **Note**: `node_modules` is NOT included to keep package size small
 
 2. **GitHub Actions Deploy Job**:
    - Downloads build artifacts
@@ -113,13 +124,16 @@ After deployment:
 
 3. **Azure App Service**:
    - Receives deployment package
+   - Installs production dependencies (`npm install --production`) if `SCM_DO_BUILD_DURING_DEPLOYMENT=true`
+   - Prisma Client is generated via `postinstall` script
    - Runs startup command (`npm start`)
    - Next.js starts on the configured port
 
 ## Additional Notes
 
 - The application uses standard Next.js output mode (not standalone)
-- Production dependencies are included in the deployment package
-- Prisma Client is generated during CI build, so it's included in `node_modules`
-- The `postinstall` script in `package.json` ensures Prisma Client is generated if dependencies are reinstalled
+- **`node_modules` is NOT included** in the deployment package to avoid size limits (~268 MB → ~50 MB)
+- Azure installs production dependencies during deployment when `SCM_DO_BUILD_DURING_DEPLOYMENT=true`
+- Prisma Client is generated automatically via the `postinstall` script in `package.json` when Azure runs `npm install`
+- Ensure `SCM_DO_BUILD_DURING_DEPLOYMENT=true` is set, otherwise the app will fail to start due to missing dependencies
 
