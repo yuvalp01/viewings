@@ -1,4 +1,3 @@
-
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
@@ -67,18 +66,11 @@ jobs:
           echo "Sanity check:"
           test -d "$OUT_DIR/node_modules/next" && echo "OK: next exists" || (echo "ERROR: next missing in deploy/node_modules" && exit 1)
 
-      - name: Zip deployment package
-        run: |
-          cd deploy
-          zip -r ../deploy.zip . -x "*.DS_Store"
-          cd ..
-          ls -lah deploy.zip
-
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: deploy.zip
+          path: deploy
 
 
   deploy:
@@ -93,13 +85,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-app
-          path: .
-
+          path: deploy
       
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: "viewings"   # exact name of your Web App
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_VIEWINGS }}
-          package: ./deploy.zip
-         
+          package: ./deploy
