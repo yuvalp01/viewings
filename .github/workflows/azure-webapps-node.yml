@@ -66,17 +66,19 @@ jobs:
       
           echo "Sanity check:"
           test -d "$OUT_DIR/node_modules/next" && echo "OK: next exists" || (echo "ERROR: next missing in deploy/node_modules" && exit 1)
-      
-      - name: Pack deployment as tar.gz
+
+      - name: Zip deployment package
         run: |
-          tar -czf deploy.tgz -C deploy .
-          ls -lah deploy.tgz
+          cd deploy
+          zip -r ../deploy.zip . -x "*.DS_Store"
+          cd ..
+          ls -lah deploy.zip
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: deploy.tgz
+          path: deploy.zip
 
 
   deploy:
@@ -92,11 +94,12 @@ jobs:
         with:
           name: node-app
           path: .
+
       
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: "viewings"   # exact name of your Web App
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_VIEWINGS }}
-          package: ./deploy.tgz
+          package: ./deploy.zip
          
