@@ -41,30 +41,31 @@ jobs:
       
           OUT_DIR=deploy
           rm -rf "$OUT_DIR"
-          mkdir -p "$OUT_DIR/.next"
+          mkdir -p "$OUT_DIR"
       
-          echo "Find standalone server.js..."
-          STANDALONE_SERVER="$(find .next/standalone -name server.js -type f | head -n 1)"
-          STANDALONE_ROOT="$(dirname "$STANDALONE_SERVER")"
-          echo "Standalone root: $STANDALONE_ROOT"
+          echo "Copy Next.js build output"
+          cp -R .next "$OUT_DIR/.next"
       
-          echo "Copy standalone runtime (includes minimal node_modules with next)"
-          cp -R "$STANDALONE_ROOT/"* "$OUT_DIR/"
-      
-          echo "Copy Next static + server + BUILD_ID"
-          cp -R .next/static "$OUT_DIR/.next/static"
-          cp -R .next/server "$OUT_DIR/.next/server"
-          cp -f .next/BUILD_ID "$OUT_DIR/.next/BUILD_ID"
-      
-          echo "Copy public"
+          echo "Copy public assets"
           cp -R public "$OUT_DIR/public"
-  
+      
+          echo "Copy package files"
+          cp package.json "$OUT_DIR/package.json"
+          cp package-lock.json "$OUT_DIR/package-lock.json"
+      
+          echo "Copy production node_modules"
+          cp -R node_modules "$OUT_DIR/node_modules"
+      
+          echo "Copy Prisma schema (needed for Prisma Client)"
+          cp -R prisma "$OUT_DIR/prisma"
+      
           echo "Done. Listing deploy:"
           ls -la "$OUT_DIR"
           ls -la "$OUT_DIR/.next"
       
-          echo "Sanity check:"
+          echo "Sanity checks:"
           test -d "$OUT_DIR/node_modules/next" && echo "OK: next exists" || (echo "ERROR: next missing in deploy/node_modules" && exit 1)
+          test -d "$OUT_DIR/.next" && echo "OK: .next directory exists" || (echo "ERROR: .next directory missing" && exit 1)
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
