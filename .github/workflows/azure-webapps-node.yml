@@ -38,16 +38,25 @@ jobs:
 
       - name: Prepare deployment package
         run: |
-          mkdir -p deploy
+          APP_NAME=cursor-test5
+          OUT_DIR=deploy
+          mkdir -p $OUT_DIR/.next   
+          
           # Copy standalone build output
-          cp -r .next/standalone/* deploy/
-          # Copy public folder (required for static assets)
-          cp -r public deploy/public
-          # Copy .next/static (required for static assets)
-          mkdir -p deploy/.next
-          cp -r .next/static deploy/.next/static
-          # Copy package.json for start script
-          cp package.json deploy/
+          echo "Copy standalone server (server.js + minimal node_modules)"
+          cp -r .next/standalone/projects/$APP_NAME/* $OUT_DIR/
+
+          # Copy static folder (required for static assets)
+          echo "Copy Next.js static assets (CSS/JS)"
+          cp -R .next/static $OUT_DIR/.next/static
+
+          # Copy public folder 
+          echo "Copy public assets"
+          cp -R public $OUT_DIR/public
+          
+          # Copy server folder 
+          echo "Copy Next.js required server files (App Router manifests)"
+          cp -R .next/server $OUT_DIR/.next/server
   
   
       - name: Upload artifact for deployment job
