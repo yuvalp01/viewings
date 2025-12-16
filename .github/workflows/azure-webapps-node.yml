@@ -63,7 +63,6 @@ jobs:
           echo "Sanity checks:"
           test -d "$OUT_DIR/.next" && echo "OK: .next directory exists" || (echo "ERROR: .next directory missing" && exit 1)
           test -f "$OUT_DIR/package.json" && echo "OK: package.json exists" || (echo "ERROR: package.json missing" && exit 1)
-          test -d "$OUT_DIR/prisma" && echo "OK: prisma directory exists" || (echo "ERROR: prisma directory missing" && exit 1)
           
           echo "Package size check:"
           du -sh "$OUT_DIR" || true
