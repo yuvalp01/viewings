@@ -42,27 +42,39 @@ jobs:
           OUT_DIR=deploy
           rm -rf "$OUT_DIR"
           mkdir -p "$OUT_DIR"
-          
-          # 1) standalone to the route (include server.js + node_modules subset)
-          cp -R .next/standalone/* "$OUT_DIR/"
-          
-          # 2) static 
-          mkdir -p "$OUT_DIR/.next"
-          cp -R .next/static "$OUT_DIR/.next/static"
-          
-          # 3) public
-          cp -R public "$OUT_DIR/public" || true
-          
-          # 4) package.json (optional)
+      
+          echo "Copy Next.js build output"
+          cp -R .next "$OUT_DIR/.next"
+      
+          echo "Copy public assets"
+          cp -R public "$OUT_DIR/public"
+      
+          echo "Copy source code (needed for Next.js runtime)"
+          cp -R app "$OUT_DIR/app"
+          cp -R lib "$OUT_DIR/lib" || true
+      
+          echo "Copy configuration files"
+          cp next.config.ts "$OUT_DIR/next.config.ts"
+          cp tsconfig.json "$OUT_DIR/tsconfig.json"
+          cp postcss.config.mjs "$OUT_DIR/postcss.config.mjs" || true
+          cp eslint.config.mjs "$OUT_DIR/eslint.config.mjs" || true
+      
+          echo "Copy package files"
           cp package.json "$OUT_DIR/package.json"
-
+          cp package-lock.json "$OUT_DIR/package-lock.json"
+      
+          echo "Copy Prisma schema (needed for Prisma Client generation)"
+          cp -R prisma "$OUT_DIR/prisma"
+      
           echo "Done. Listing deploy:"
           ls -la "$OUT_DIR"
           ls -la "$OUT_DIR/.next"
       
           echo "Sanity checks:"
           test -d "$OUT_DIR/.next" && echo "OK: .next directory exists" || (echo "ERROR: .next directory missing" && exit 1)
+          test -d "$OUT_DIR/app" && echo "OK: app directory exists" || (echo "ERROR: app directory missing" && exit 1)
           test -f "$OUT_DIR/package.json" && echo "OK: package.json exists" || (echo "ERROR: package.json missing" && exit 1)
+          test -d "$OUT_DIR/prisma" && echo "OK: prisma directory exists" || (echo "ERROR: prisma directory missing" && exit 1)
           
           echo "Package size check:"
           du -sh "$OUT_DIR" || true
