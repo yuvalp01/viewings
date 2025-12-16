@@ -42,20 +42,20 @@ jobs:
           OUT_DIR=deploy
           rm -rf "$OUT_DIR"
           mkdir -p "$OUT_DIR"
-      
-          echo "Copy Next.js build output"
-          cp -R .next "$OUT_DIR/.next"
-      
-          echo "Copy public assets"
-          cp -R public "$OUT_DIR/public"
-      
-          echo "Copy package files"
+          
+          # 1) standalone to the route (include server.js + node_modules subset)
+          cp -R .next/standalone/* "$OUT_DIR/"
+          
+          # 2) static 
+          mkdir -p "$OUT_DIR/.next"
+          cp -R .next/static "$OUT_DIR/.next/static"
+          
+          # 3) public
+          cp -R public "$OUT_DIR/public" || true
+          
+          # 4) package.json (optional)
           cp package.json "$OUT_DIR/package.json"
-          cp package-lock.json "$OUT_DIR/package-lock.json"
-      
-          echo "Copy Prisma schema (needed for Prisma Client generation)"
-          cp -R prisma "$OUT_DIR/prisma"
-      
+
           echo "Done. Listing deploy:"
           ls -la "$OUT_DIR"
           ls -la "$OUT_DIR/.next"
