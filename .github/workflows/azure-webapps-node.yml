@@ -1,22 +1,31 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# Build Docker image and push to Azure Container Registry (ACR)
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Node.js app to Azure Web App - viewings
+name: Build and push Docker image to ACR - viewings
 
 on:
- # push:
-  #  branches:
-   #   - main
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
+env:
+  IMAGE_NAME: viewings
+  # Configure your ACR registry name (e.g., myregistry or myregistry.azurecr.io)
+  # Set this as a GitHub secret: ACR_REGISTRY_NAME
+  # Azure CLI accepts both formats, but registry name without .azurecr.io is preferred
+  ACR_REGISTRY_NAME: viewings
+
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read # This is required for actions/checkout
+      id-token: write # This is required for Azure login
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Node.js version
         uses: actions/setup-node@v3

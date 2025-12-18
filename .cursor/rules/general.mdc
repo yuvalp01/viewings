@@ -13,3 +13,4 @@ alwaysApply: true
 - Keep functions small and focused
 - Use early returns to reduce nesting
 - Prefer const over let, avoid var
+- Never change the sql server database yourself
