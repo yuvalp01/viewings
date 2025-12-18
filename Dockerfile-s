@@ -3,6 +3,7 @@
     WORKDIR /app
     
     COPY package*.json ./
+
     # prevent postinstall (prisma generate) from running before schema exists
     RUN npm ci --ignore-scripts
     

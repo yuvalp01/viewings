@@ -26,7 +26,7 @@ interface Viewing {
 }
 
 interface EditViewingModalProps {
-  viewing: Viewing;
+  viewing: Viewing | null;
   stakeholders: Stakeholder[];
   isOpen: boolean;
   onClose: () => void;
@@ -98,24 +98,42 @@ export default function EditViewingModal({
 
   // Populate form with viewing data when modal opens
   useEffect(() => {
-    if (isOpen && viewing) {
-      setFormData({
-        address: viewing.address || "",
-        size: numberToString(viewing.size),
-        price: numberToString(viewing.price),
-        bedrooms: numberToString(viewing.bedrooms),
-        floor: numberToString(viewing.floor),
-        isElevator: viewing.isElevator,
-        constructionYear: viewing.constructionYear
-          ? viewing.constructionYear.toString()
-          : "",
-        linkAd: viewing.linkAd || "",
-        linkAddress: viewing.linkAddress || "",
-        comments: viewing.comments || "",
-        agentStakeholderId: viewing.agentStakeholderId
-          ? viewing.agentStakeholderId.toString()
-          : "",
-      });
+    if (isOpen) {
+      if (viewing) {
+        // Edit mode - populate with existing data
+        setFormData({
+          address: viewing.address || "",
+          size: numberToString(viewing.size),
+          price: numberToString(viewing.price),
+          bedrooms: numberToString(viewing.bedrooms),
+          floor: numberToString(viewing.floor),
+          isElevator: viewing.isElevator,
+          constructionYear: viewing.constructionYear
+            ? viewing.constructionYear.toString()
+            : "",
+          linkAd: viewing.linkAd || "",
+          linkAddress: viewing.linkAddress || "",
+          comments: viewing.comments || "",
+          agentStakeholderId: viewing.agentStakeholderId
+            ? viewing.agentStakeholderId.toString()
+            : "",
+        });
+      } else {
+        // Create mode - start with empty form
+        setFormData({
+          address: "",
+          size: "",
+          price: "",
+          bedrooms: "",
+          floor: "",
+          isElevator: false,
+          constructionYear: "",
+          linkAd: "",
+          linkAddress: "",
+          comments: "",
+          agentStakeholderId: "",
+        });
+      }
       setError(null);
       setSuccess(false);
       setErrors({});
@@ -322,35 +340,42 @@ export default function EditViewingModal({
     setIsSubmitting(true);
 
     try {
+      const method = viewing ? "PUT" : "POST";
+      const body: any = {
+        address: formData.address.trim(),
+        size: parseFloat(formData.size),
+        price: parseFloat(formData.price),
+        bedrooms: parseFloat(formData.bedrooms),
+        floor: formData.floor.trim() ? parseFloat(formData.floor) : null,
+        isElevator: formData.isElevator,
+        constructionYear: formData.constructionYear.trim()
+          ? parseInt(formData.constructionYear)
+          : null,
+        linkAd: formData.linkAd.trim() || null,
+        linkAddress: formData.linkAddress.trim() || null,
+        comments: formData.comments.trim() || null,
+        agentStakeholderId: formData.agentStakeholderId
+          ? parseInt(formData.agentStakeholderId)
+          : null,
+      };
+
+      // Add id only for PUT requests (edit mode)
+      if (viewing) {
+        body.id = viewing.id;
+      }
+
       const response = await fetch("/api/viewings", {
-        method: "PUT",
+        method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          id: viewing.id,
-          address: formData.address.trim(),
-          size: parseFloat(formData.size),
-          price: parseFloat(formData.price),
-          bedrooms: parseFloat(formData.bedrooms),
-          floor: formData.floor.trim() ? parseFloat(formData.floor) : null,
-          isElevator: formData.isElevator,
-          constructionYear: formData.constructionYear.trim()
-            ? parseInt(formData.constructionYear)
-            : null,
-          linkAd: formData.linkAd.trim() || null,
-          linkAddress: formData.linkAddress.trim() || null,
-          comments: formData.comments.trim() || null,
-          agentStakeholderId: formData.agentStakeholderId
-            ? parseInt(formData.agentStakeholderId)
-            : null,
-        }),
+        body: JSON.stringify(body),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to update viewing");
+        throw new Error(data.error || `Failed to ${viewing ? "update" : "create"} viewing`);
       }
 
       setSuccess(true);
@@ -408,7 +433,7 @@ export default function EditViewingModal({
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900">
           <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-            Edit Viewing
+            {viewing ? "Edit Viewing" : "New Viewing"}
           </h2>
           <button
             onClick={onClose}
@@ -425,7 +450,7 @@ export default function EditViewingModal({
             {success && (
               <div className="rounded-lg bg-green-50 border border-green-200 p-4 dark:bg-green-900/20 dark:border-green-800">
                 <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                  Viewing updated successfully!
+                  Viewing {viewing ? "updated" : "created"} successfully!
                 </p>
               </div>
             )}
@@ -851,8 +876,8 @@ export default function EditViewingModal({
                 }
                 tooltip={
                   isSubmitting
-                    ? "Updating viewing..."
-                    : "Save changes"
+                    ? viewing ? "Updating viewing..." : "Creating viewing..."
+                    : viewing ? "Save changes" : "Create viewing"
                 }
               />
             </div>

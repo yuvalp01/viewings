@@ -10,6 +10,7 @@
     FROM node:20-alpine AS builder
     WORKDIR /app
     
+    # If you truly don't need DATABASE_URL at build time, remove these two lines.
 
     COPY --from=deps /app/node_modules ./node_modules
     COPY . .

@@ -425,30 +425,42 @@ export function ElevatorDoorsIcon({
       viewBox="0 0 24 24"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Elevator door frame */}
+      {/* Up arrow */}
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2.5}
+        d="M12 2v4M10 4l2-2 2 2"
+      />
+      
+      {/* Down arrow */}
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2.5}
+        d="M12 6v4M10 8l2 2 2-2"
+      />
+      
+      {/* Elevator rectangle */}
       <rect
-        x="6"
-        y="4"
-        width="12"
-        height="16"
+        x="7"
+        y="11"
+        width="10"
+        height="11"
         rx="1"
-        strokeWidth={2}
+        strokeWidth={2.5}
         stroke="currentColor"
         fill="none"
       />
-      {/* Left door vertical line */}
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 4v16"
-      />
-      {/* Right door vertical line */}
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M15 4v16"
+      
+      {/* Center vertical line (closed doors) */}
+      <line
+        x1="12"
+        y1="11"
+        x2="12"
+        y2="22"
+        strokeWidth={2.5}
+        stroke="currentColor"
       />
     </svg>
   );
@@ -467,41 +479,97 @@ export function NoElevatorIcon({
       viewBox="0 0 24 24"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Elevator door frame */}
+      {/* Up arrow */}
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2.5}
+        d="M12 2v4M10 4l2-2 2 2"
+        opacity="0.5"
+      />
+      
+      {/* Down arrow */}
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2.5}
+        d="M12 6v4M10 8l2 2 2-2"
+        opacity="0.5"
+      />
+      
+      {/* Elevator rectangle */}
       <rect
-        x="6"
-        y="4"
-        width="12"
-        height="16"
+        x="7"
+        y="11"
+        width="10"
+        height="11"
         rx="1"
-        strokeWidth={2}
+        strokeWidth={2.5}
         stroke="currentColor"
         fill="none"
         opacity="0.5"
       />
-      {/* Left door vertical line */}
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 4v16"
+      
+      {/* Center vertical line (closed doors) */}
+      <line
+        x1="12"
+        y1="11"
+        x2="12"
+        y2="22"
+        strokeWidth={2.5}
+        stroke="currentColor"
         opacity="0.5"
       />
-      {/* Right door vertical line */}
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M15 4v16"
-        opacity="0.5"
-      />
+      
       {/* Diagonal slash */}
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={2.5}
-        d="M7 5l10 14M17 5l-10 14"
+        d="M6 10l12 13M18 10l-12 13"
       />
+    </svg>
+  );
+}
+
+export function PhotoIcon({
+  className = "h-4 w-4",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+      />
+    </svg>
+  );
+}
+
+export function MenuIcon({
+  className = "h-4 w-4",
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      className={className}
+      fill="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle cx="12" cy="5" r="1.5" />
+      <circle cx="12" cy="12" r="1.5" />
+      <circle cx="12" cy="19" r="1.5" />
     </svg>
   );
 }

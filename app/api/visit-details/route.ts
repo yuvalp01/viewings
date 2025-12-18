@@ -23,18 +23,6 @@ function validateVisitDetailsData(body: any): { error?: string } {
     }
   }
 
-  // Validate linkToPhotos URL if provided
-  if (body.linkToPhotos !== null && body.linkToPhotos !== undefined && body.linkToPhotos !== "") {
-    if (typeof body.linkToPhotos !== "string") {
-      return { error: "Link to photos must be a string" };
-    }
-    try {
-      new URL(body.linkToPhotos.trim());
-    } catch {
-      return { error: "Link to photos must be a valid URL" };
-    }
-  }
-
   // Validate quality level IDs if provided
   const qualityLevelFields = [
     "aluminumWindowsLevel",
@@ -45,7 +33,6 @@ function validateVisitDetailsData(body: any): { error?: string } {
     "balconyLevel",
     "buildingLobbyLevel",
     "buildingMaintenanceLevel",
-    "metroStationDistanceLevel",
   ];
 
   for (const field of qualityLevelFields) {
@@ -115,9 +102,6 @@ export async function GET(request: NextRequest) {
         buildingMaintenanceLevel: true,
         comments: true,
         expectedMinimalRent: true,
-        linkToPhotos: true,
-        metroStationDistanceLevel: true,
-        transportation: true,
       },
     });
 
@@ -248,9 +232,6 @@ export async function PUT(request: NextRequest) {
       buildingMaintenanceLevel: body.buildingMaintenanceLevel ?? null,
       comments: body.comments?.trim() || null,
       expectedMinimalRent: body.expectedMinimalRent ?? null,
-      linkToPhotos: body.linkToPhotos?.trim() || null,
-      metroStationDistanceLevel: body.metroStationDistanceLevel ?? null,
-      transportation: body.transportation?.trim() || null,
     };
 
     // Update viewing record with visit details
@@ -274,9 +255,6 @@ export async function PUT(request: NextRequest) {
         buildingMaintenanceLevel: true,
         comments: true,
         expectedMinimalRent: true,
-        linkToPhotos: true,
-        metroStationDistanceLevel: true,
-        transportation: true,
       },
     });
     // #region agent log
