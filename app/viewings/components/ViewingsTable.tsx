@@ -45,6 +45,9 @@ interface Viewing {
   buildingLobbyLevel: number | null;
   buildingMaintenanceLevel: number | null;
   expectedMinimalRent: number | null;
+  linkToPhotos: string | null;
+  metroStationDistanceLevel: number | null;
+  transportation: string | null;
 }
 
 interface ViewingsTableProps {
@@ -71,7 +74,7 @@ function toNumber(value: number | null | undefined): number | null {
 // Calculate completion percentage for visit details
 // Matches the logic from VisitDetailsModal.tsx
 function calculateCompletionPercentage(viewing: Viewing): number {
-  const totalFields = 12;
+  const totalFields = 15;
   let filledFields = 0;
 
   // isSecurityDoor: only count if not null
@@ -92,12 +95,15 @@ function calculateCompletionPercentage(viewing: Viewing): number {
     "buildingMaintenanceLevel",
     "expectedMinimalRent",
     "comments",
+    "linkToPhotos",
+    "metroStationDistanceLevel",
+    "transportation",
   ];
 
   fieldsToCheck.forEach((field) => {
     const value = viewing[field as keyof Viewing];
-    if (field === "comments") {
-      // Comments is a string, check if not empty after trim
+    if (field === "comments" || field === "linkToPhotos" || field === "transportation") {
+      // String fields, check if not empty after trim
       if (typeof value === "string" && value.trim() !== "") {
         filledFields++;
       }
@@ -137,6 +143,24 @@ function ProgressClipboardIcon({
     ? "text-green-600 dark:text-green-400" 
     : "text-blue-600 dark:text-blue-400";
 
+  // Clipboard icon without checkmark (for < 100%)
+  const ClipboardIconWithoutCheck = () => (
+    <svg
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+      />
+    </svg>
+  );
+
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
       {/* Progress ring SVG */}
@@ -172,8 +196,14 @@ function ProgressClipboardIcon({
           />
         )}
       </svg>
-      {/* Clipboard icon */}
-      <ClipboardIcon className={`${className} relative z-10 ${iconColor} transition-colors duration-300`} />
+      {/* Clipboard icon - with checkmark when 100%, without when < 100% */}
+      {completionPercentage === 100 ? (
+        <ClipboardIcon className={`${className} relative z-10 ${iconColor} transition-colors duration-300`} />
+      ) : (
+        <div className={`relative z-10 ${iconColor} transition-colors duration-300`}>
+          <ClipboardIconWithoutCheck />
+        </div>
+      )}
     </div>
   );
 }

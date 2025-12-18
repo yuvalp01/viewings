@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { XIcon, CheckIcon, CheckCircleIcon } from "@/app/components/icons";
+import { XIcon, CheckIcon, CheckCircleIcon, ExternalLinkIcon } from "@/app/components/icons";
 
 interface QualityLevel {
   id: number;
@@ -34,6 +34,9 @@ interface FormData {
   buildingMaintenanceLevel: string;
   comments: string;
   expectedMinimalRent: string;
+  linkToPhotos: string;
+  metroStationDistanceLevel: string;
+  transportation: string;
 }
 
 interface FormErrors {
@@ -47,6 +50,7 @@ interface FormErrors {
   buildingLobbyLevel?: string;
   buildingMaintenanceLevel?: string;
   expectedMinimalRent?: string;
+  linkToPhotos?: string;
 }
 
 export default function VisitDetailsModal({
@@ -76,11 +80,14 @@ export default function VisitDetailsModal({
     buildingMaintenanceLevel: "",
     comments: "",
     expectedMinimalRent: "",
+    linkToPhotos: "",
+    metroStationDistanceLevel: "",
+    transportation: "",
   });
 
   // Calculate completion percentage
   const completionPercentage = useMemo(() => {
-    const totalFields = 12;
+    const totalFields = 15;
     let filledFields = 0;
 
     // isSecurityDoor: only count if not null
@@ -101,6 +108,9 @@ export default function VisitDetailsModal({
       "buildingMaintenanceLevel",
       "comments",
       "expectedMinimalRent",
+      "linkToPhotos",
+      "metroStationDistanceLevel",
+      "transportation",
     ];
 
     stringFields.forEach((field) => {
@@ -161,15 +171,15 @@ export default function VisitDetailsModal({
   // Check if a tab is complete
   const isTabComplete = useMemo(() => {
     const tabFields: Record<string, (keyof FormData)[]> = {
-      building: ["buildingLobbyLevel", "buildingMaintenanceLevel"],
-      security: ["isSecurityDoor", "buildingSecurityDoorsPercent"],
-      features: ["aluminumWindowsLevel", "viewLevel", "balconyLevel"],
+      building: ["buildingLobbyLevel", "buildingMaintenanceLevel", "buildingSecurityDoorsPercent"],
+      features: ["aluminumWindowsLevel", "viewLevel", "balconyLevel", "isSecurityDoor"],
       renovation: [
         "renovationKitchenLevel",
         "renovationBathroomLevel",
         "renovationLevel",
       ],
       comments: ["expectedMinimalRent", "comments"],
+      additionalDetails: ["linkToPhotos", "metroStationDistanceLevel", "transportation"],
     };
 
     const result: Record<string, boolean> = {};
@@ -229,6 +239,11 @@ export default function VisitDetailsModal({
               expectedMinimalRent: details.expectedMinimalRent
                 ? details.expectedMinimalRent.toString()
                 : "",
+              linkToPhotos: details.linkToPhotos || "",
+              metroStationDistanceLevel: details.metroStationDistanceLevel
+                ? details.metroStationDistanceLevel.toString()
+                : "",
+              transportation: details.transportation || "",
             });
           } else {
             // Reset to empty form
@@ -245,6 +260,9 @@ export default function VisitDetailsModal({
               buildingMaintenanceLevel: "",
               comments: "",
               expectedMinimalRent: "",
+              linkToPhotos: "",
+              metroStationDistanceLevel: "",
+              transportation: "",
             });
           }
           setIsLoading(false);
@@ -297,6 +315,14 @@ export default function VisitDetailsModal({
       const rentNum = parseFloat(formData.expectedMinimalRent);
       if (isNaN(rentNum) || rentNum < 0) {
         newErrors.expectedMinimalRent = "Expected minimal rent must be a non-negative number";
+      }
+    }
+
+    if (formData.linkToPhotos.trim()) {
+      try {
+        new URL(formData.linkToPhotos.trim());
+      } catch {
+        newErrors.linkToPhotos = "Please enter a valid URL";
       }
     }
 
@@ -353,6 +379,11 @@ export default function VisitDetailsModal({
           expectedMinimalRent: formData.expectedMinimalRent.trim()
             ? parseFloat(formData.expectedMinimalRent)
             : null,
+          linkToPhotos: formData.linkToPhotos.trim() || null,
+          metroStationDistanceLevel: formData.metroStationDistanceLevel
+            ? parseInt(formData.metroStationDistanceLevel)
+            : null,
+          transportation: formData.transportation.trim() || null,
         }),
       });
 
@@ -536,10 +567,10 @@ export default function VisitDetailsModal({
                   <nav className="flex space-x-1 sm:space-x-2" aria-label="Tabs">
                     {[
                       { id: "building", label: "Building" },
-                      { id: "security", label: "Security" },
                       { id: "features", label: "Features" },
                       { id: "renovation", label: "Renovation" },
                       { id: "comments", label: "Comments" },
+                      { id: "additionalDetails", label: "Additional Details" },
                     ].map((tab) => {
                       const isComplete = isTabComplete[tab.id];
                       const isActive = activeTab === tab.id;
@@ -619,45 +650,6 @@ export default function VisitDetailsModal({
                         ))}
                       </select>
                     </div>
-                  </div>
-                )}
-
-                {/* Security Tab */}
-                {activeTab === "security" && (
-                  <div className="space-y-4">
-                    <div className="flex items-center">
-                      <input
-                        ref={securityDoorCheckboxRef}
-                        type="checkbox"
-                        id="isSecurityDoor"
-                        name="isSecurityDoor"
-                        checked={formData.isSecurityDoor === true}
-                        onChange={handleSecurityDoorChange}
-                        className="h-5 w-5 rounded border-zinc-300 text-zinc-600 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900"
-                      />
-                      <label
-                        htmlFor="isSecurityDoor"
-                        className="ml-3 block text-sm font-medium text-zinc-900 dark:text-zinc-50 cursor-pointer"
-                        onClick={handleSecurityDoorChange}
-                      >
-                        Security Door
-                        {formData.isSecurityDoor === null && (
-                          <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">
-                            (Not specified)
-                          </span>
-                        )}
-                        {formData.isSecurityDoor === false && (
-                          <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">
-                            (No)
-                          </span>
-                        )}
-                        {formData.isSecurityDoor === true && (
-                          <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">
-                            (Yes)
-                          </span>
-                        )}
-                      </label>
-                    </div>
 
                     <div>
                       <label
@@ -693,6 +685,40 @@ export default function VisitDetailsModal({
                 {/* Features Tab */}
                 {activeTab === "features" && (
                   <div className="space-y-4">
+                    <div className="flex items-center">
+                      <input
+                        ref={securityDoorCheckboxRef}
+                        type="checkbox"
+                        id="isSecurityDoor"
+                        name="isSecurityDoor"
+                        checked={formData.isSecurityDoor === true}
+                        onChange={handleSecurityDoorChange}
+                        className="h-5 w-5 rounded border-zinc-300 text-zinc-600 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900"
+                      />
+                      <label
+                        htmlFor="isSecurityDoor"
+                        className="ml-3 block text-sm font-medium text-zinc-900 dark:text-zinc-50 cursor-pointer"
+                        onClick={handleSecurityDoorChange}
+                      >
+                        Security Door
+                        {formData.isSecurityDoor === null && (
+                          <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">
+                            (Not specified)
+                          </span>
+                        )}
+                        {formData.isSecurityDoor === false && (
+                          <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">
+                            (No)
+                          </span>
+                        )}
+                        {formData.isSecurityDoor === true && (
+                          <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">
+                            (Yes)
+                          </span>
+                        )}
+                      </label>
+                    </div>
+
                     <div>
                       <label
                         htmlFor="aluminumWindowsLevel"
@@ -884,6 +910,95 @@ export default function VisitDetailsModal({
                         rows={6}
                         className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm transition-colors text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder-zinc-500"
                         placeholder="Enter any additional comments or notes..."
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Additional Details Tab */}
+                {activeTab === "additionalDetails" && (
+                  <div className="space-y-4">
+                    <div>
+                      <label
+                        htmlFor="linkToPhotos"
+                        className="block text-sm font-medium text-zinc-900 dark:text-zinc-50 mb-2"
+                      >
+                        Link to Photos
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          id="linkToPhotos"
+                          name="linkToPhotos"
+                          value={formData.linkToPhotos}
+                          onChange={handleChange}
+                          className={`flex-1 rounded-lg border px-4 py-3 text-sm transition-colors ${
+                            errors.linkToPhotos
+                              ? "border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20"
+                              : "border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900"
+                          } text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:text-zinc-50 dark:placeholder-zinc-500`}
+                          placeholder="https://..."
+                        />
+                        {formData.linkToPhotos.trim() && (
+                          <a
+                            href={formData.linkToPhotos.trim()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 py-3 text-sm transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                            title="Open link in new tab"
+                          >
+                            <ExternalLinkIcon className="h-5 w-5" />
+                          </a>
+                        )}
+                      </div>
+                      {errors.linkToPhotos && (
+                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                          {errors.linkToPhotos}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="metroStationDistanceLevel"
+                        className="block text-sm font-medium text-zinc-900 dark:text-zinc-50 mb-2"
+                      >
+                        Metro Station Distance Level
+                      </label>
+                      <select
+                        id="metroStationDistanceLevel"
+                        name="metroStationDistanceLevel"
+                        value={formData.metroStationDistanceLevel}
+                        onChange={handleChange}
+                        className={`w-full rounded-lg border border-zinc-300 px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:text-zinc-50 ${getQualityLevelBgColor(formData.metroStationDistanceLevel)}`}
+                      >
+                        <option value="">Select level...</option>
+                        {qualityLevels.map((level) => (
+                          <option key={level.id} value={level.id}>
+                            {level.name || `Level ${level.id}`}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                        None/Bad: 15+ minutes • Basic: 10-15 minutes • Good: 5-10 minutes • Superb: less than 5 minutes
+                      </p>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="transportation"
+                        className="block text-sm font-medium text-zinc-900 dark:text-zinc-50 mb-2"
+                      >
+                        Transportation
+                      </label>
+                      <textarea
+                        id="transportation"
+                        name="transportation"
+                        value={formData.transportation}
+                        onChange={handleChange}
+                        rows={2}
+                        className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm transition-colors text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder-zinc-500"
+                        placeholder="Enter transportation details..."
                       />
                     </div>
                   </div>

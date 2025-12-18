@@ -23,6 +23,18 @@ function validateVisitDetailsData(body: any): { error?: string } {
     }
   }
 
+  // Validate linkToPhotos URL if provided
+  if (body.linkToPhotos !== null && body.linkToPhotos !== undefined && body.linkToPhotos !== "") {
+    if (typeof body.linkToPhotos !== "string") {
+      return { error: "Link to photos must be a string" };
+    }
+    try {
+      new URL(body.linkToPhotos.trim());
+    } catch {
+      return { error: "Link to photos must be a valid URL" };
+    }
+  }
+
   // Validate quality level IDs if provided
   const qualityLevelFields = [
     "aluminumWindowsLevel",
@@ -33,6 +45,7 @@ function validateVisitDetailsData(body: any): { error?: string } {
     "balconyLevel",
     "buildingLobbyLevel",
     "buildingMaintenanceLevel",
+    "metroStationDistanceLevel",
   ];
 
   for (const field of qualityLevelFields) {
@@ -102,6 +115,9 @@ export async function GET(request: NextRequest) {
         buildingMaintenanceLevel: true,
         comments: true,
         expectedMinimalRent: true,
+        linkToPhotos: true,
+        metroStationDistanceLevel: true,
+        transportation: true,
       },
     });
 
@@ -207,7 +223,7 @@ export async function PUT(request: NextRequest) {
       fetch('http://127.0.0.1:7242/ingest/bf41240d-daf1-44a9-bf17-e80cf5156a08',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.ts:165',message:'After qualityLevel lookup',data:{foundCount:existingLevels.length,requestedCount:qualityLevelIds.length,timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B,C'})}).catch(()=>{});
       // #endregion
 
-      const existingIds = new Set(existingLevels.map((level) => level.id));
+      const existingIds = new Set(existingLevels.map((level: { id: number }) => level.id));
       const invalidIds = qualityLevelIds.filter((id) => !existingIds.has(id));
 
       if (invalidIds.length > 0) {
@@ -232,6 +248,9 @@ export async function PUT(request: NextRequest) {
       buildingMaintenanceLevel: body.buildingMaintenanceLevel ?? null,
       comments: body.comments?.trim() || null,
       expectedMinimalRent: body.expectedMinimalRent ?? null,
+      linkToPhotos: body.linkToPhotos?.trim() || null,
+      metroStationDistanceLevel: body.metroStationDistanceLevel ?? null,
+      transportation: body.transportation?.trim() || null,
     };
 
     // Update viewing record with visit details
@@ -255,6 +274,9 @@ export async function PUT(request: NextRequest) {
         buildingMaintenanceLevel: true,
         comments: true,
         expectedMinimalRent: true,
+        linkToPhotos: true,
+        metroStationDistanceLevel: true,
+        transportation: true,
       },
     });
     // #region agent log
