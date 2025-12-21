@@ -10,7 +10,8 @@ interface ViewingExtra {
   id: number;
   name: string;
   description: string;
-  estimation: number;
+  estimation: number | null;
+  category: number;
 }
 
 export default function ViewingExtrasTable() {
@@ -111,6 +112,19 @@ export default function ViewingExtrasTable() {
     return "text-zinc-900 dark:text-zinc-50";
   };
 
+  const getCategoryLabel = (category: number): string => {
+    switch (category) {
+      case 1:
+        return "Basic";
+      case 2:
+        return "Essential";
+      case 3:
+        return "Extra";
+      default:
+        return "Unknown";
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -175,6 +189,9 @@ export default function ViewingExtrasTable() {
                 <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                   Description
                 </th>
+                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
+                  Category
+                </th>
                 <th className="px-4 py-3 text-right text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                   Estimation
                 </th>
@@ -195,10 +212,17 @@ export default function ViewingExtrasTable() {
                   <td className="px-4 py-3 text-sm text-zinc-900 dark:text-zinc-50">
                     {extra.description}
                   </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-zinc-900 dark:text-zinc-50">
+                    {getCategoryLabel(extra.category)}
+                  </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium">
-                    <span className={getAmountColorClass(extra.estimation)}>
-                      {formatAmount(extra.estimation)}
-                    </span>
+                    {extra.estimation !== null ? (
+                      <span className={getAmountColorClass(extra.estimation)}>
+                        {formatAmount(extra.estimation)}
+                      </span>
+                    ) : (
+                      <span className="text-zinc-400 dark:text-zinc-500">-</span>
+                    )}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right text-sm">
                     <div className="flex items-center justify-end gap-2">
@@ -246,5 +270,6 @@ export default function ViewingExtrasTable() {
     </>
   );
 }
+
 
 

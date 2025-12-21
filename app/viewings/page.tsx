@@ -122,6 +122,7 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
       name: true,
       description: true,
       estimation: true,
+      category: true,
     },
   });
 
@@ -131,7 +132,8 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
     id: extra.id,
     name: extra.name,
     description: extra.description,
-    estimation: Number(extra.estimation),
+    estimation: extra.estimation ? Number(extra.estimation) : null,
+    category: extra.category,
   }));
 
   // Serialize Decimal values to numbers for client component

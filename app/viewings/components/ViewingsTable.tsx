@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { EditIcon, TrashIcon, ExternalLinkIcon, DocumentIcon, XIcon, UserIcon, CalendarIcon, CalendarCheckIcon, ClipboardIcon, ElevatorDoorsIcon, NoElevatorIcon, PhotoIcon, MenuIcon, CurrencyDollarIcon } from "@/app/components/icons";
+import { useRouter } from "next/navigation";
+import { EditIcon, TrashIcon, ExternalLinkIcon, DocumentIcon, XIcon, UserIcon, CalendarIcon, CalendarCheckIcon, ClipboardIcon, ElevatorDoorsIcon, NoElevatorIcon, PhotoIcon, MenuIcon, CurrencyDollarIcon, ChevronUpIcon, ChevronDownIcon } from "@/app/components/icons";
 import EditViewingModal from "./EditViewingModal";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import ScheduleVisitModal from "./ScheduleVisitModal";
@@ -9,6 +10,7 @@ import VisitDetailsModal from "./VisitDetailsModal";
 import AdditionalDetailsModal from "./AdditionalDetailsModal";
 import ExtraExpensesModal from "./ExtraExpensesModal";
 import VisibilityModal from "./VisibilityModal";
+import TotalCostModal from "./TotalCostModal";
 
 interface Stakeholder {
   id: number;
@@ -25,7 +27,8 @@ interface ViewingExtra {
   id: number;
   name: string;
   description: string;
-  estimation: number;
+  estimation: number | null;
+  category: number;
 }
 
 interface Viewing {
@@ -82,6 +85,25 @@ function toNumber(value: number | null | undefined): number | null {
   // Fallback: try to convert to number (shouldn't happen if serialized correctly)
   const num = Number(value);
   return isNaN(num) ? null : num;
+}
+
+// Calculate total cost for a viewing
+function calculateTotalCost(viewing: Viewing, extraItemsTotal: number): number {
+  const price = viewing.price ?? 0;
+  const rent = viewing.expectedMinimalRent ?? 0;
+  
+  const purchaseTax = price * 0.0309;
+  const lawyerFee = Math.max(price * 0.0124, 1240);
+  const notaryFee = Math.max(price * 0.0124, 1240);
+  const registrationFee = price * 0.0065;
+  const findingTenant = rent;
+  const ysFee = Math.max(price * 0.038, 3800) + 500;
+  
+  const firstSubtotal = purchaseTax + lawyerFee + notaryFee + registrationFee + findingTenant + ysFee;
+  const secondSubtotal = extraItemsTotal;
+  const third = price;
+  
+  return firstSubtotal + secondSubtotal + third;
 }
 
 // Calculate completion percentage for visit details
@@ -226,7 +248,9 @@ export default function ViewingsTable({
   qualityLevels,
   extras,
 }: ViewingsTableProps) {
+  const router = useRouter();
   const [editingViewing, setEditingViewing] = useState<Viewing | null>(null);
+  const [localViewings, setLocalViewings] = useState<Viewing[]>(viewings);
   const [deletingViewingId, setDeletingViewingId] = useState<number | null>(
     null
   );
@@ -239,8 +263,14 @@ export default function ViewingsTable({
   const [additionalDetailsViewing, setAdditionalDetailsViewing] = useState<Viewing | null>(null);
   const [extraExpensesViewing, setExtraExpensesViewing] = useState<Viewing | null>(null);
   const [visibilityViewing, setVisibilityViewing] = useState<Viewing | null>(null);
+  const [totalCostViewing, setTotalCostViewing] = useState<Viewing | null>(null);
   const [openMenuRowId, setOpenMenuRowId] = useState<number | null>(null);
   const [expenseTotals, setExpenseTotals] = useState<Record<number, number>>({});
+  const [editingCell, setEditingCell] = useState<{ viewingId: number; field: 'price' | 'rent' } | null>(null);
+  const [editingValue, setEditingValue] = useState<string>("");
+  const [isSavingCell, setIsSavingCell] = useState(false);
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const handleEditClick = (viewing: Viewing) => {
     setEditingViewing(viewing);
@@ -307,7 +337,7 @@ export default function ViewingsTable({
     // Refresh expense totals after modal closes
     const fetchExpenseTotals = async () => {
       const totals: Record<number, number> = {};
-      const promises = viewings.map(async (viewing) => {
+      const promises = localViewings.map(async (viewing) => {
         try {
           const response = await fetch(`/api/viewing-extra-items?viewingId=${viewing.id}`);
           const data = await response.json();
@@ -337,15 +367,103 @@ export default function ViewingsTable({
     setVisibilityViewing(null);
   };
 
+  const handleTotalCostClick = (viewing: Viewing) => {
+    setTotalCostViewing(viewing);
+    setOpenMenuRowId(null);
+  };
+
+  const handleCloseTotalCost = () => {
+    setTotalCostViewing(null);
+  };
+
   const handleMenuToggle = (viewingId: number) => {
     setOpenMenuRowId(openMenuRowId === viewingId ? null : viewingId);
+  };
+
+  const handleCellEditStart = (viewingId: number, field: 'price' | 'rent', currentValue: number | null) => {
+    setEditingCell({ viewingId, field });
+    setEditingValue(currentValue !== null ? currentValue.toString() : "");
+  };
+
+  const handleCellEditCancel = () => {
+    setEditingCell(null);
+    setEditingValue("");
+  };
+
+  const handleCellEditSave = async (viewingId: number, field: 'price' | 'rent') => {
+    const value = parseFloat(editingValue.trim());
+    if (isNaN(value) || value < 0) {
+      return; // Invalid value, don't save
+    }
+
+    setIsSavingCell(true);
+
+    try {
+      if (field === 'price') {
+        // Update price via viewings API
+        const response = await fetch("/api/viewings", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: viewingId,
+            price: value,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to update price");
+        }
+      } else {
+        // Update rent via visit-details API
+        const response = await fetch("/api/visit-details", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            viewingId: viewingId,
+            expectedMinimalRent: value,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to update rent");
+        }
+      }
+
+      // Update local state immediately for instant UI feedback
+      setLocalViewings((prev) =>
+        prev.map((v) =>
+          v.id === viewingId
+            ? {
+                ...v,
+                ...(field === 'price' ? { price: value } : { expectedMinimalRent: value }),
+              }
+            : v
+        )
+      );
+
+      // Refresh server component data without full page reload
+      router.refresh();
+    } catch (err) {
+      console.error(`Error updating ${field}:`, err);
+      alert(err instanceof Error ? err.message : `Failed to update ${field}`);
+    } finally {
+      setIsSavingCell(false);
+      setEditingCell(null);
+      setEditingValue("");
+    }
   };
 
   // Fetch expense totals for all viewings
   useEffect(() => {
     const fetchExpenseTotals = async () => {
       const totals: Record<number, number> = {};
-      const promises = viewings.map(async (viewing) => {
+      const promises = localViewings.map(async (viewing) => {
         try {
           const response = await fetch(`/api/viewing-extra-items?viewingId=${viewing.id}`);
           const data = await response.json();
@@ -364,10 +482,117 @@ export default function ViewingsTable({
       setExpenseTotals(totals);
     };
 
-    if (viewings.length > 0) {
+    if (localViewings.length > 0) {
       fetchExpenseTotals();
     }
+  }, [localViewings]);
+
+  // Sync localViewings with viewings prop when it changes (e.g., from router.refresh())
+  useEffect(() => {
+    setLocalViewings(viewings);
   }, [viewings]);
+
+  // Handle column header click for sorting
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      // Toggle direction if clicking the same column
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new column and default to ascending
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  // Sort viewings based on current sort column and direction
+  const sortedViewings = [...localViewings].sort((a, b) => {
+    if (!sortColumn) return 0;
+
+    let aValue: any;
+    let bValue: any;
+
+    switch (sortColumn) {
+      case 'id':
+        aValue = a.id;
+        bValue = b.id;
+        break;
+      case 'address':
+        aValue = a.address || '';
+        bValue = b.address || '';
+        break;
+      case 'size':
+        aValue = toNumber(a.size);
+        bValue = toNumber(b.size);
+        break;
+      case 'price':
+        aValue = toNumber(a.price);
+        bValue = toNumber(b.price);
+        break;
+      case 'pricePerM':
+        const aPrice = toNumber(a.price);
+        const aSize = toNumber(a.size);
+        const bPrice = toNumber(b.price);
+        const bSize = toNumber(b.size);
+        aValue = (aPrice !== null && aSize !== null && aSize > 0) ? aPrice / aSize : null;
+        bValue = (bPrice !== null && bSize !== null && bSize > 0) ? bPrice / bSize : null;
+        break;
+      case 'bedrooms':
+        aValue = toNumber(a.bedrooms);
+        bValue = toNumber(b.bedrooms);
+        break;
+      case 'floor':
+        aValue = toNumber(a.floor);
+        bValue = toNumber(b.floor);
+        break;
+      case 'rent':
+        aValue = toNumber(a.expectedMinimalRent);
+        bValue = toNumber(b.expectedMinimalRent);
+        break;
+      case 'extra':
+        aValue = expenseTotals[a.id] ?? 0;
+        bValue = expenseTotals[b.id] ?? 0;
+        break;
+      case 'totalCost':
+        const aExtraTotal = expenseTotals[a.id] ?? 0;
+        const bExtraTotal = expenseTotals[b.id] ?? 0;
+        aValue = calculateTotalCost(a, aExtraTotal);
+        bValue = calculateTotalCost(b, bExtraTotal);
+        break;
+      case 'agent':
+        aValue = a.agentStakeholder?.name || '';
+        bValue = b.agentStakeholder?.name || '';
+        break;
+      case 'comments':
+        aValue = a.comments ? 1 : 0;
+        bValue = b.comments ? 1 : 0;
+        break;
+      case 'visit':
+        aValue = calculateCompletionPercentage(a);
+        bValue = calculateCompletionPercentage(b);
+        break;
+      case 'schedule':
+        aValue = a.viewingDate ? new Date(a.viewingDate).getTime() : null;
+        bValue = b.viewingDate ? new Date(b.viewingDate).getTime() : null;
+        break;
+      default:
+        return 0;
+    }
+
+    // Handle null values - nulls go to the end when ascending, beginning when descending
+    if (aValue === null && bValue === null) return 0;
+    if (aValue === null) return sortDirection === 'asc' ? 1 : -1;
+    if (bValue === null) return sortDirection === 'asc' ? -1 : 1;
+
+    // Compare values
+    let comparison = 0;
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      comparison = aValue.localeCompare(bValue);
+    } else {
+      comparison = (aValue as number) - (bValue as number);
+    }
+
+    return sortDirection === 'asc' ? comparison : -comparison;
+  });
 
   // Handle click outside to close menu
   useEffect(() => {
@@ -415,6 +640,52 @@ export default function ViewingsTable({
     return () => document.removeEventListener("keydown", handleEscape);
   }, [viewingComments]);
 
+  // Helper component for sortable column headers
+  const SortableHeader = ({ 
+    column, 
+    children, 
+    className = "",
+    align = "left",
+    style
+  }: { 
+    column: string; 
+    children: React.ReactNode; 
+    className?: string;
+    align?: "left" | "center" | "right";
+    style?: React.CSSProperties;
+  }) => {
+    const isSorted = sortColumn === column;
+    const textAlign = align === "center" ? "text-center" : align === "right" ? "text-right" : "text-left";
+    
+    return (
+      <th 
+        className={`${className} ${textAlign} cursor-pointer select-none hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors`}
+        onClick={() => handleSort(column)}
+        style={style}
+      >
+        <div className="flex items-center gap-1">
+          <span>{children}</span>
+          <div className="flex flex-col">
+            <ChevronUpIcon 
+              className={`h-3 w-3 ${
+                isSorted && sortDirection === 'asc' 
+                  ? 'text-zinc-900 dark:text-zinc-50' 
+                  : 'text-zinc-300 dark:text-zinc-600'
+              }`} 
+            />
+            <ChevronDownIcon 
+              className={`h-3 w-3 -mt-1 ${
+                isSorted && sortDirection === 'desc' 
+                  ? 'text-zinc-900 dark:text-zinc-50' 
+                  : 'text-zinc-300 dark:text-zinc-600'
+              }`} 
+            />
+          </div>
+        </div>
+      </th>
+    );
+  };
+
   // Prevent body scroll when comments modal is open
   useEffect(() => {
     if (viewingComments !== null) {
@@ -434,55 +705,101 @@ export default function ViewingsTable({
           <table className="w-full divide-y divide-zinc-200 dark:divide-zinc-800" style={{ tableLayout: 'fixed', width: '100%' }}>
             <thead className="bg-zinc-50 dark:bg-zinc-800/50">
               <tr>
-                <th className="sticky left-0 z-20 w-10 border-r border-zinc-200 bg-zinc-50 px-1 py-2 text-left text-xs font-medium tracking-wider text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-400 sm:px-1.5">
+                <SortableHeader 
+                  column="id"
+                  className="sticky left-0 z-20 w-10 border-r border-zinc-200 bg-zinc-50 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-400 sm:px-1.5"
+                >
                   ID
-                </th>
-                <th className="sticky left-10 z-20 w-[120px] max-w-[120px] border-r border-zinc-200 bg-zinc-50 px-1 py-2 text-left text-xs font-medium tracking-wider text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-400 sm:left-10 sm:px-1.5" style={{ boxSizing: 'border-box' }}>
+                </SortableHeader>
+                <SortableHeader 
+                  column="address"
+                  className="sticky left-10 z-20 w-[120px] max-w-[120px] border-r border-zinc-200 bg-zinc-50 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-400 sm:left-10 sm:px-1.5"
+                  style={{ boxSizing: 'border-box' }}
+                >
                   Address
-                </th>
+                </SortableHeader>
                 <th className="relative z-10 w-8 px-0.5 py-2 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                   Ad
                 </th>
-                <th className="w-12 px-1 py-2 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
+                <SortableHeader 
+                  column="size"
+                  className="w-12 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
+                >
                   Size
-                </th>
-                <th className="w-16 px-1 py-2 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
+                </SortableHeader>
+                <SortableHeader 
+                  column="price"
+                  className="w-16 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
+                >
                   Price
-                </th>
-                <th className="w-14 px-1 py-2 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
+                </SortableHeader>
+                <SortableHeader 
+                  column="pricePerM"
+                  className="w-14 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
+                >
                   €/m²
-                </th>
-                <th className="w-10 px-0.5 py-2 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
+                </SortableHeader>
+                <SortableHeader 
+                  column="bedrooms"
+                  className="w-10 px-0.5 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
+                  align="center"
+                >
                   Beds
-                </th>
-                <th className="hidden w-14 px-1 py-2 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 md:table-cell">
+                </SortableHeader>
+                <SortableHeader 
+                  column="floor"
+                  className="hidden w-14 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 md:table-cell"
+                >
                   Floor
-                </th>
-                <th className="w-16 px-1 py-2 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
+                </SortableHeader>
+                <SortableHeader 
+                  column="rent"
+                  className="w-16 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
+                >
                   Rent
-                </th>
-                <th className="w-20 px-1 py-2 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
+                </SortableHeader>
+                <SortableHeader 
+                  column="extra"
+                  className="w-20 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
+                >
                   Extra
-                </th>
-                <th className="w-20 px-1 py-2 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
+                </SortableHeader>
+                <SortableHeader 
+                  column="totalCost"
+                  className="w-24 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
+                >
+                  Total Cost
+                </SortableHeader>
+                <SortableHeader 
+                  column="agent"
+                  className="w-20 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
+                >
                   Agent
-                </th>
+                </SortableHeader>
                 <th className="w-8 px-0.5 py-2 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                    
                 </th>
-                <th className="w-8 px-0.5 py-2 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
+                <SortableHeader 
+                  column="visit"
+                  className="w-8 px-0.5 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
+                  align="center"
+                >
                   Visit
-                </th>
-                <th className="w-8 px-0.5 py-2 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
+                </SortableHeader>
+                <SortableHeader 
+                  column="schedule"
+                  className="w-8 px-0.5 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
+                  align="center"
+                >
                   Schedule
-                </th>
+                </SortableHeader>
                 <th className="w-8 px-0.5 py-2 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                   ⋮
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 bg-white dark:divide-zinc-800 dark:bg-zinc-900">
-              {viewings.map((viewing) => (
+              {sortedViewings.map((viewing) => (
                 <tr
                   key={viewing.id}
                   className="group transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
@@ -530,10 +847,51 @@ export default function ViewingsTable({
                   </td>
                   <td className="whitespace-nowrap px-1 py-2 text-xs font-medium text-zinc-900 dark:text-zinc-50">
                     {(() => {
+                      const isEditing = editingCell?.viewingId === viewing.id && editingCell?.field === 'price';
                       const price = toNumber(viewing.price);
-                      return price !== null
-                        ? `€${price.toLocaleString()}`
-                        : "-";
+                      
+                      if (isEditing) {
+                        return (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              value={editingValue}
+                              onChange={(e) => setEditingValue(e.target.value)}
+                              onBlur={() => {
+                                const value = parseFloat(editingValue.trim());
+                                if (!isNaN(value) && value >= 0) {
+                                  handleCellEditSave(viewing.id, 'price');
+                                } else {
+                                  handleCellEditCancel();
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const value = parseFloat(editingValue.trim());
+                                  if (!isNaN(value) && value >= 0) {
+                                    handleCellEditSave(viewing.id, 'price');
+                                  }
+                                } else if (e.key === 'Escape') {
+                                  handleCellEditCancel();
+                                }
+                              }}
+                              autoFocus
+                              className="w-20 rounded border border-zinc-300 px-1 py-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                              disabled={isSavingCell}
+                            />
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <button
+                          onClick={() => handleCellEditStart(viewing.id, 'price', price)}
+                          className="hover:underline cursor-pointer"
+                          title="Click to edit price"
+                        >
+                          {price !== null ? `€${price.toLocaleString()}` : "-"}
+                        </button>
+                      );
                     })()}
                   </td>
                   <td className="whitespace-nowrap px-1 py-2 text-xs font-medium text-zinc-900 dark:text-zinc-50">
@@ -572,30 +930,82 @@ export default function ViewingsTable({
                   </td>
                   <td className="whitespace-nowrap px-1 py-2 text-xs font-medium text-zinc-900 dark:text-zinc-50">
                     {(() => {
+                      const isEditing = editingCell?.viewingId === viewing.id && editingCell?.field === 'rent';
                       const rent = toNumber(viewing.expectedMinimalRent);
-                      return rent !== null
-                        ? `€${rent.toLocaleString()}`
-                        : "-";
+                      
+                      if (isEditing) {
+                        return (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              value={editingValue}
+                              onChange={(e) => setEditingValue(e.target.value)}
+                              onBlur={() => {
+                                const value = parseFloat(editingValue.trim());
+                                if (!isNaN(value) && value >= 0) {
+                                  handleCellEditSave(viewing.id, 'rent');
+                                } else {
+                                  handleCellEditCancel();
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const value = parseFloat(editingValue.trim());
+                                  if (!isNaN(value) && value >= 0) {
+                                    handleCellEditSave(viewing.id, 'rent');
+                                  }
+                                } else if (e.key === 'Escape') {
+                                  handleCellEditCancel();
+                                }
+                              }}
+                              autoFocus
+                              className="w-20 rounded border border-zinc-300 px-1 py-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                              disabled={isSavingCell}
+                            />
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <button
+                          onClick={() => handleCellEditStart(viewing.id, 'rent', rent)}
+                          className="hover:underline cursor-pointer"
+                          title="Click to edit rent"
+                        >
+                          {rent !== null ? `€${rent.toLocaleString()}` : "-"}
+                        </button>
+                      );
                     })()}
                   </td>
-                  <td className="whitespace-nowrap px-1 py-2 text-xs font-medium">
+                  <td className="whitespace-nowrap px-1 py-2 text-xs font-medium text-zinc-900 dark:text-zinc-50">
                     {(() => {
                       const total = expenseTotals[viewing.id] ?? null;
+                      
                       if (total === null) {
                         return <span className="text-zinc-300 dark:text-zinc-700">-</span>;
                       }
-                      const colorClass = total > 0 
-                        ? "text-green-600 dark:text-green-400" 
-                        : total < 0 
-                        ? "text-red-600 dark:text-red-400" 
-                        : "text-zinc-900 dark:text-zinc-50";
                       return (
                         <button
                           onClick={() => handleExtraExpensesClick(viewing)}
-                          className={`${colorClass} transition-colors hover:underline cursor-pointer`}
+                          className="transition-colors hover:underline cursor-pointer"
                           title="Click to manage extra expenses"
                         >
-                          {total !== 0 ? `€${total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "€0.00"}
+                          {total !== 0 ? `€${Math.round(total).toLocaleString("en-US")}` : "€0"}
+                        </button>
+                      );
+                    })()}
+                  </td>
+                  <td className="whitespace-nowrap px-1 py-2 text-xs font-medium text-zinc-900 dark:text-zinc-50">
+                    {(() => {
+                      const extraTotal = expenseTotals[viewing.id] ?? 0;
+                      const totalCost = calculateTotalCost(viewing, extraTotal);
+                      return (
+                        <button
+                          onClick={() => handleTotalCostClick(viewing)}
+                          className="hover:underline cursor-pointer"
+                          title="Click to view total cost breakdown"
+                        >
+                          {totalCost > 0 ? `€${Math.round(totalCost).toLocaleString("en-US")}` : "-"}
                         </button>
                       );
                     })()}
@@ -820,6 +1230,14 @@ export default function ViewingsTable({
           stakeholders={allStakeholders}
           isOpen={!!visibilityViewing}
           onClose={handleCloseVisibility}
+        />
+      )}
+
+      {totalCostViewing && (
+        <TotalCostModal
+          viewing={totalCostViewing}
+          isOpen={!!totalCostViewing}
+          onClose={handleCloseTotalCost}
         />
       )}
     </>

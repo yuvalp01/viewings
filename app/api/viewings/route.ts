@@ -221,10 +221,16 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Determine if this is a partial update (only scheduling fields)
+    // Determine if this is a partial update
+    // If only specific fields are provided (not all required fields), treat as partial
+    const providedFields = Object.keys(body).filter(key => key !== 'id');
+    const requiredFieldsForFullUpdate = ['address', 'size', 'price', 'bedrooms'];
+    const hasAllRequiredFields = requiredFieldsForFullUpdate.every(field => body[field] !== undefined);
+    
     const isPartialUpdate = 
       body.viewingDate !== undefined || 
-      body.viewedByStakeholderId !== undefined;
+      body.viewedByStakeholderId !== undefined ||
+      !hasAllRequiredFields;
 
     // Validate viewing data (only validates fields that are provided for partial updates)
     const validation = validateViewingData(body, isPartialUpdate);

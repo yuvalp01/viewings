@@ -7,29 +7,29 @@ generator client {
 
 datasource db {
   provider = "sqlserver"
-  schemas    = ["dbo", "auth"]
+  schemas  = ["dbo", "auth"]
 }
 
 model Apartment {
-  id                        Int       @id @default(autoincrement())
-  address                   String?   @db.NVarChar(255)
-  status                    Int
-  purchaseDate              DateTime? @map("PurchaseDate") @db.DateTime2
-  floor                     Int?
-  size                      Int?
-  door                      String?   @db.NVarChar(50)
-  investmentType            Int       @map("InvestmentType")
-  comments                  String?   @db.NVarChar(255)
-  managementFeePercentage   Decimal   @map("ManagementFeePercentage") @db.Decimal(18, 2)
-  price                     Decimal?  @db.Decimal(18, 2)
-  totalInvestment           Decimal?  @map("TotalInvestment") @db.Decimal(18, 2)
-  isUnderDiscussion         Boolean   @default(false) @map("IsUnderDiscussion")
-  bedrooms                  Decimal?  @db.Decimal(18, 2)
-  isDeleted                 Boolean   @default(false) @map("IsDeleted")
-  stageId                   Int?      @map("StageId")
+  id                      Int       @id @default(autoincrement())
+  address                 String?   @db.NVarChar(255)
+  status                  Int
+  purchaseDate            DateTime? @map("PurchaseDate") @db.DateTime2
+  floor                   Int?
+  size                    Int?
+  door                    String?   @db.NVarChar(50)
+  investmentType          Int       @map("InvestmentType")
+  comments                String?   @db.NVarChar(255)
+  managementFeePercentage Decimal   @map("ManagementFeePercentage") @db.Decimal(18, 2)
+  price                   Decimal?  @db.Decimal(18, 2)
+  totalInvestment         Decimal?  @map("TotalInvestment") @db.Decimal(18, 2)
+  isUnderDiscussion       Boolean   @default(false) @map("IsUnderDiscussion")
+  bedrooms                Decimal?  @db.Decimal(18, 2)
+  isDeleted               Boolean   @default(false) @map("IsDeleted")
+  stageId                 Int?      @map("StageId")
 
-  @@schema("dbo")
   @@map("apartments")
+  @@schema("dbo")
 }
 
 model Stakeholder {
@@ -38,102 +38,104 @@ model Stakeholder {
   type      Int?    @map("Type")
   isDeleted Boolean @default(false) @map("IsDeleted")
 
-  viewingsAsAgent Viewing[] @relation("AgentStakeholder")
-  viewingsAsViewedBy Viewing[] @relation("ViewedByStakeholder")
+  viewingsAsAgent    Viewing[]            @relation("AgentStakeholder")
+  viewingsAsViewedBy Viewing[]            @relation("ViewedByStakeholder")
   viewingsVisibility ViewingsVisibility[]
 
-  @@schema("dbo")
   @@map("stakeholders")
+  @@schema("dbo")
 }
 
 model QualityLevel {
-  id          Int      @id @map("Id") @db.TinyInt
-  name        String   @map("Name") @db.VarChar(20)
-  description String?  @map("Description") @db.NVarChar(255)
+  id          Int     @id @map("Id") @db.TinyInt
+  name        String  @map("Name") @db.VarChar(20)
+  description String? @map("Description") @db.NVarChar(255)
 
-  @@schema("dbo")
   @@map("lkp_qualityLevel")
+  @@schema("dbo")
 }
 
 model Viewing {
-  id                Int       @id @default(autoincrement())
-  address           String?   @map("Address")
-  size              Decimal?  @map("Size") @db.Decimal(9, 2)
-  price             Decimal?  @map("Price") @db.Decimal(18, 2)
-  bedrooms          Decimal?  @map("Bedrooms") @db.Decimal(3, 1)
-  floor             Decimal?  @map("Floor") @db.Decimal(4, 1)
-  isElevator        Boolean   @default(false) @map("IsElevator")
-  constructionYear  Int?      @map("ConstructionYear") @db.SmallInt
-  linkAd            String?   @map("LinkAd") @db.NVarChar(500)
-  linkAddress       String?   @map("LinkAddress") @db.NVarChar(500)
-  comments          String?   @map("Comments") @db.NVarChar(500)
-  agentStakeholderId Int?     @map("AgentStakeholderId")
-  viewingDate       DateTime? @map("ViewingDate") @db.DateTime2
-  viewedByStakeholderId Int?  @map("ViewedByStakeholderId")
-  isDeleted         Boolean   @default(false) @map("IsDeleted")
-  
+  id                    Int       @id @default(autoincrement())
+  address               String?   @map("Address")
+  size                  Decimal?  @map("Size") @db.Decimal(9, 2)
+  price                 Decimal?  @map("Price") @db.Decimal(18, 2)
+  bedrooms              Decimal?  @map("Bedrooms") @db.Decimal(3, 1)
+  floor                 Decimal?  @map("Floor") @db.Decimal(4, 1)
+  isElevator            Boolean   @default(false) @map("IsElevator")
+  constructionYear      Int?      @map("ConstructionYear") @db.SmallInt
+  linkAd                String?   @map("LinkAd") @db.NVarChar(500)
+  linkAddress           String?   @map("LinkAddress") @db.NVarChar(500)
+  comments              String?   @map("Comments") @db.NVarChar(500)
+  agentStakeholderId    Int?      @map("AgentStakeholderId")
+  viewingDate           DateTime? @map("ViewingDate") @db.DateTime2
+  viewedByStakeholderId Int?      @map("ViewedByStakeholderId")
+  isDeleted             Boolean   @default(false) @map("IsDeleted")
+
   // Visit details fields
-  isSecurityDoor              Boolean? @map("IsSecurityDoor")
-  buildingSecurityDoorsPercent Int?    @map("BuildingSecurityDoorsPercent") @db.TinyInt
-  aluminumWindowsLevel        Int?    @map("AluminumWindowsLevel") @db.TinyInt
-  renovationKitchenLevel      Int?    @map("RenovationKitchenLevel") @db.TinyInt
-  renovationBathroomLevel      Int?    @map("RenovationBathroomLevel") @db.TinyInt
-  renovationLevel              Int?    @map("RenovationLevel") @db.TinyInt
-  viewLevel                    Int?    @map("ViewLevel") @db.TinyInt
-  balconyLevel                 Int?    @map("BalconyLevel") @db.TinyInt
-  buildingLobbyLevel          Int?    @map("BuildingLobbyLevel") @db.TinyInt
-  buildingMaintenanceLevel     Int?    @map("BuildingMaintenanceLevel") @db.TinyInt
+  isSecurityDoor               Boolean? @map("IsSecurityDoor")
+  buildingSecurityDoorsPercent Int?     @map("BuildingSecurityDoorsPercent") @db.TinyInt
+  aluminumWindowsLevel         Int?     @map("AluminumWindowsLevel") @db.TinyInt
+  renovationKitchenLevel       Int?     @map("RenovationKitchenLevel") @db.TinyInt
+  renovationBathroomLevel      Int?     @map("RenovationBathroomLevel") @db.TinyInt
+  renovationLevel              Int?     @map("RenovationLevel") @db.TinyInt
+  viewLevel                    Int?     @map("ViewLevel") @db.TinyInt
+  balconyLevel                 Int?     @map("BalconyLevel") @db.TinyInt
+  buildingLobbyLevel           Int?     @map("BuildingLobbyLevel") @db.TinyInt
+  buildingMaintenanceLevel     Int?     @map("BuildingMaintenanceLevel") @db.TinyInt
   expectedMinimalRent          Decimal? @map("ExpectedMinimalRent") @db.Decimal(18, 2)
-  linkToPhotos                String?  @map("LinkToPhotos") @db.NVarChar(500)
-  metroStationDistanceLevel    Int?    @map("MetroStationDistanceLevel") @db.TinyInt
-  transportation              String?  @map("Transportation") @db.NVarChar(Max)
+  linkToPhotos                 String?  @map("LinkToPhotos") @db.NVarChar(500)
+  metroStationDistanceLevel    Int?     @map("MetroStationDistanceLevel") @db.TinyInt
+  transportation               String?  @map("Transportation") @db.NVarChar(Max)
 
-  agentStakeholder Stakeholder? @relation("AgentStakeholder", fields: [agentStakeholderId], references: [id])
-  viewedByStakeholder Stakeholder? @relation("ViewedByStakeholder", fields: [viewedByStakeholderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  viewingExtraItems ViewingExtraItem[]
-  viewingsVisibility ViewingsVisibility[]
+  agentStakeholder    Stakeholder?         @relation("AgentStakeholder", fields: [agentStakeholderId], references: [id])
+  viewedByStakeholder Stakeholder?         @relation("ViewedByStakeholder", fields: [viewedByStakeholderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  viewingExtraItems   ViewingExtraItem[]
+  viewingsVisibility  ViewingsVisibility[]
 
-  @@schema("dbo")
   @@map("viewings")
+  @@schema("dbo")
 }
 
 model ViewingExtra {
-  id          Int      @id @default(autoincrement())
-  name        String   @map("Name") @db.VarChar(20)
-  description String   @map("Description") @db.NVarChar(Max)
-  estimation  Decimal  @map("Estimation") @db.Decimal(18, 2)
+  id                Int      @id @default(autoincrement())
+  name              String   @map("Name") @db.VarChar(20)
+  description       String   @map("Description") @db.NVarChar(Max)
+  estimation        Decimal? @map("Estimation") @db.Decimal(18, 2)
+  category          Int      @map("Category")
 
   viewingExtraItems ViewingExtraItem[]
 
-  @@schema("dbo")
   @@map("lkp_viewingExtras")
+  @@schema("dbo")
 }
 
 model ViewingExtraItem {
   id          Int      @id @default(autoincrement())
   viewingId   Int      @map("ViewingId")
   extraId     Int      @map("ExtraId")
+  type        Int      @map("Type")
+  category    Int      @map("Category")
   description String   @map("Description") @db.NVarChar(Max)
   amount      Decimal  @map("Amount") @db.Decimal(18, 2)
   createdAt   DateTime @default(now()) @map("CreatedAt") @db.DateTime2
 
-  viewing Viewing @relation(fields: [viewingId], references: [id])
-  extra ViewingExtra @relation(fields: [extraId], references: [id])
+  viewing Viewing      @relation(fields: [viewingId], references: [id])
+  extra   ViewingExtra @relation(fields: [extraId], references: [id])
 
-  @@schema("dbo")
   @@map("viewingExtraItems")
+  @@schema("dbo")
 }
 
 model ViewingsVisibility {
-  viewingId    Int      @map("ViewingId")
-  stakeholderId Int     @map("StakeholderId")
-  createdAt    DateTime @default(now()) @map("CreatedAt") @db.DateTime2
+  viewingId     Int      @map("ViewingId")
+  stakeholderId Int      @map("StakeholderId")
+  createdAt     DateTime @default(now()) @map("CreatedAt") @db.DateTime2
 
-  viewing Viewing @relation(fields: [viewingId], references: [id], onDelete: Cascade)
+  viewing     Viewing     @relation(fields: [viewingId], references: [id], onDelete: Cascade)
   stakeholder Stakeholder @relation(fields: [stakeholderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@id([viewingId, stakeholderId])
-  @@schema("auth")
   @@map("viewingsVisibility")
+  @@schema("auth")
 }
-

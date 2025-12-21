@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             name: true,
+            category: true,
           },
         },
       },
@@ -117,6 +118,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
+    // Check if this is a bulk operation (array of items)
+    if (Array.isArray(body.items)) {
+      return handleBulkCreate(body.items);
+    }
+
+    // Single item creation (existing behavior)
     // Validate viewing ID
     if (!body.viewingId || typeof body.viewingId !== "number") {
       return NextResponse.json(
@@ -183,6 +190,8 @@ export async function POST(request: NextRequest) {
       data: {
         viewingId: body.viewingId,
         extraId: body.extraId,
+        type: body.extraId, // Type appears to be the same as ExtraId based on DB structure
+        category: extra.category,
         description: body.description.trim(),
         amount: body.amount,
       },
@@ -191,6 +200,7 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             name: true,
+            category: true,
           },
         },
       },
@@ -227,6 +237,167 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       { error: "Failed to create viewing extra item" },
+      { status: 500 }
+    );
+  }
+}
+
+// Bulk create handler
+async function handleBulkCreate(items: any[]) {
+  try {
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json(
+        { error: "Items array is required and must not be empty" },
+        { status: 400 }
+      );
+    }
+
+    // Validate all items first
+    const errors: string[] = [];
+    const viewingIds = new Set<number>();
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      
+      if (!item.viewingId || typeof item.viewingId !== "number") {
+        errors.push(`Item ${i + 1}: Viewing ID is required`);
+        continue;
+      }
+
+      if (!item.extraId || typeof item.extraId !== "number") {
+        errors.push(`Item ${i + 1}: Extra ID is required`);
+        continue;
+      }
+
+      if (!item.description || typeof item.description !== "string" || item.description.trim().length === 0) {
+        errors.push(`Item ${i + 1}: Description is required`);
+        continue;
+      }
+
+      if (item.amount === undefined || typeof item.amount !== "number") {
+        errors.push(`Item ${i + 1}: Amount is required`);
+        continue;
+      }
+
+      viewingIds.add(item.viewingId);
+    }
+
+    if (errors.length > 0) {
+      return NextResponse.json(
+        { error: "Validation errors", details: errors },
+        { status: 400 }
+      );
+    }
+
+    // All items must have the same viewingId
+    if (viewingIds.size !== 1) {
+      return NextResponse.json(
+        { error: "All items must belong to the same viewing" },
+        { status: 400 }
+      );
+    }
+
+    const viewingId = Array.from(viewingIds)[0];
+
+    // Check if viewing exists and is not deleted
+    const viewing = await prisma.viewing.findUnique({
+      where: { id: viewingId },
+    });
+
+    if (!viewing) {
+      return NextResponse.json(
+        { error: "Viewing not found" },
+        { status: 404 }
+      );
+    }
+
+    if (viewing.isDeleted) {
+      return NextResponse.json(
+        { error: "Cannot add extra items to a deleted viewing" },
+        { status: 400 }
+      );
+    }
+
+    // Verify all extras exist
+    const extraIds = items.map(item => item.extraId);
+    const extras = await prisma.viewingExtra.findMany({
+      where: {
+        id: { in: extraIds },
+      },
+    });
+
+    if (extras.length !== extraIds.length) {
+      const foundIds = new Set(extras.map(e => e.id));
+      const missingIds = extraIds.filter(id => !foundIds.has(id));
+      return NextResponse.json(
+        { error: `Some extras not found: ${missingIds.join(", ")}` },
+        { status: 404 }
+      );
+    }
+
+    // Create all items in a transaction
+    const createdItems = await prisma.$transaction(
+      items.map(item => {
+        const extra = extras.find(e => e.id === item.extraId);
+        if (!extra) {
+          throw new Error(`Extra with id ${item.extraId} not found`);
+        }
+        return prisma.viewingExtraItem.create({
+          data: {
+            viewingId: item.viewingId,
+            extraId: item.extraId,
+            type: item.extraId, // Type appears to be the same as ExtraId based on DB structure
+            category: extra.category,
+            description: item.description.trim(),
+            amount: item.amount,
+          },
+          include: {
+            extra: {
+              select: {
+                id: true,
+                name: true,
+                category: true,
+              },
+            },
+          },
+        });
+      })
+    );
+
+    // Serialize Decimal values to numbers
+    const serializedItems = createdItems.map((item) => ({
+      id: item.id,
+      viewingId: item.viewingId,
+      extraId: item.extraId,
+      extra: item.extra,
+      description: item.description,
+      amount: Number(item.amount),
+      createdAt: item.createdAt.toISOString(),
+    }));
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: `Successfully created ${serializedItems.length} extra item(s)`,
+        data: serializedItems,
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("Error creating bulk viewing extra items:", error);
+
+    // Handle Prisma errors
+    if (error && typeof error === "object" && "code" in error) {
+      if (error.code === "P2003") {
+        return NextResponse.json(
+          { error: "Invalid reference to viewing or extra" },
+          { status: 400 }
+        );
+      }
+    }
+
+    return NextResponse.json(
+      { error: "Failed to create viewing extra items" },
       { status: 500 }
     );
   }
@@ -279,9 +450,10 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // If extraId is being updated, validate it
+    // If extraId is being updated, validate it and get extra data
+    let extra = null;
     if (body.extraId !== undefined) {
-      const extra = await prisma.viewingExtra.findUnique({
+      extra = await prisma.viewingExtra.findUnique({
         where: { id: body.extraId },
       });
 
@@ -297,6 +469,10 @@ export async function PUT(request: NextRequest) {
     const updateData: any = {};
     if (body.extraId !== undefined) {
       updateData.extraId = body.extraId;
+      updateData.type = body.extraId; // Type is the same as ExtraId
+      if (extra) {
+        updateData.category = extra.category;
+      }
     }
     if (body.description !== undefined) {
       updateData.description = body.description.trim();
@@ -314,6 +490,7 @@ export async function PUT(request: NextRequest) {
           select: {
             id: true,
             name: true,
+            category: true,
           },
         },
       },

@@ -3,12 +3,15 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { XIcon, PlusIcon, EditIcon, TrashIcon } from "@/app/components/icons";
+import BulkAddBasicsModal from "./BulkAddBasicsModal";
+import { calculateExtraAmount } from "../utils/calculateExtraAmount";
 
 interface ViewingExtra {
   id: number;
   name: string;
   description: string;
-  estimation: number;
+  estimation: number | null;
+  category: number;
 }
 
 interface ViewingExtraItem {
@@ -24,6 +27,9 @@ interface ViewingExtraItem {
 interface Viewing {
   id: number;
   address: string | null;
+  size: number | null;
+  price: number | null;
+  expectedMinimalRent: number | null;
 }
 
 interface ExtraExpensesModalProps {
@@ -37,6 +43,8 @@ interface FormData {
   extraId: string;
   description: string;
   amount: string;
+  category: string;
+  units: string;
 }
 
 export default function ExtraExpensesModal({
@@ -53,10 +61,17 @@ export default function ExtraExpensesModal({
   const [extraItems, setExtraItems] = useState<ViewingExtraItem[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showBulkAddBasics, setShowBulkAddBasics] = useState(false);
+  const [baseAmount, setBaseAmount] = useState<number | null>(null);
+
+  // Filter basic extras (category 1)
+  const basicExtras = extras.filter((extra) => extra.category === 1);
   const [formData, setFormData] = useState<FormData>({
     extraId: "",
     description: "",
     amount: "",
+    category: "",
+    units: "1",
   });
 
   // Calculate total amount
@@ -85,10 +100,13 @@ export default function ExtraExpensesModal({
       setSuccess(false);
       setEditingId(null);
       setShowAddForm(false);
+      setBaseAmount(null);
       setFormData({
         extraId: "",
         description: "",
         amount: "",
+        category: "",
+        units: "1",
       });
     }
   }, [isOpen, viewing]);
@@ -100,10 +118,13 @@ export default function ExtraExpensesModal({
         if (editingId !== null || showAddForm) {
           setEditingId(null);
           setShowAddForm(false);
+          setBaseAmount(null);
           setFormData({
             extraId: "",
             description: "",
             amount: "",
+            category: "",
+            units: "1",
           });
         } else {
           onClose();
@@ -129,10 +150,13 @@ export default function ExtraExpensesModal({
   const handleAddClick = () => {
     setShowAddForm(true);
     setEditingId(null);
+    setBaseAmount(null);
     setFormData({
       extraId: "",
       description: "",
       amount: "",
+      category: "",
+      units: "1",
     });
     setError(null);
   };
@@ -140,10 +164,27 @@ export default function ExtraExpensesModal({
   const handleEditClick = (item: ViewingExtraItem) => {
     setEditingId(item.id);
     setShowAddForm(false);
+    
+    // Extract units from description (pattern: ". X units" at the end)
+    const unitsMatch = item.description.match(/\.\s*(\d+(?:\.\d+)?)\s*units?$/i);
+    const extractedUnits = unitsMatch ? unitsMatch[1] : "1";
+    
+    // Remove units suffix from description for display
+    const descriptionWithoutUnits = unitsMatch 
+      ? item.description.substring(0, unitsMatch.index).trim()
+      : item.description;
+    
+    // Calculate base amount by dividing current amount by units
+    const unitsNum = parseFloat(extractedUnits) || 1;
+    const calculatedBaseAmount = item.amount / unitsNum;
+    setBaseAmount(calculatedBaseAmount);
+    
     setFormData({
       extraId: item.extraId.toString(),
-      description: item.description,
+      description: descriptionWithoutUnits,
       amount: item.amount.toString(),
+      category: item.extra.category !== undefined && item.extra.category !== null ? item.extra.category.toString() : "",
+      units: extractedUnits,
     });
     setError(null);
   };
@@ -151,10 +192,13 @@ export default function ExtraExpensesModal({
   const handleCancel = () => {
     setShowAddForm(false);
     setEditingId(null);
+    setBaseAmount(null);
     setFormData({
       extraId: "",
       description: "",
       amount: "",
+      category: "",
+      units: "1",
     });
     setError(null);
   };
@@ -203,9 +247,22 @@ export default function ExtraExpensesModal({
 
     const extraIdNum = parseInt(formData.extraId, 10);
     const amountNum = parseFloat(formData.amount);
+    const categoryNum = parseInt(formData.category, 10);
 
     if (isNaN(extraIdNum)) {
       setError("Please select an expense type");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!formData.category || isNaN(categoryNum)) {
+      setError("Category is required");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (![1, 2, 3].includes(categoryNum)) {
+      setError("Category must be Basic, Essential, or Extra");
       setIsSubmitting(false);
       return;
     }
@@ -222,6 +279,17 @@ export default function ExtraExpensesModal({
       return;
     }
 
+    const unitsNum = parseFloat(formData.units) || 1;
+    if (isNaN(unitsNum) || unitsNum <= 0) {
+      setError("Units must be a positive number");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Ensure description has units suffix (it should already have it from handleChange, but ensure it)
+    const baseDescription = stripUnitsSuffix(formData.description);
+    const descriptionWithUnits = `${baseDescription.trim()}. ${unitsNum} units`;
+
     try {
       const url = "/api/viewing-extra-items";
       const method = editingId ? "PUT" : "POST";
@@ -229,13 +297,13 @@ export default function ExtraExpensesModal({
         ? {
             id: editingId,
             extraId: extraIdNum,
-            description: formData.description.trim(),
+            description: descriptionWithUnits,
             amount: amountNum,
           }
         : {
             viewingId: viewing.id,
             extraId: extraIdNum,
-            description: formData.description.trim(),
+            description: descriptionWithUnits,
             amount: amountNum,
           };
 
@@ -253,6 +321,26 @@ export default function ExtraExpensesModal({
         throw new Error(data.error || "Failed to save extra item");
       }
 
+      // Update the ViewingExtra's category if it has changed
+      const selectedExtra = extras.find((e) => e.id === extraIdNum);
+      if (selectedExtra && selectedExtra.category !== categoryNum) {
+        try {
+          await fetch("/api/viewing-extras", {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              id: extraIdNum,
+              category: categoryNum,
+            }),
+          });
+        } catch (err) {
+          console.error("Error updating viewing extra category:", err);
+          // Don't fail the whole operation if category update fails
+        }
+      }
+
       // Reload extra items
       const itemsResponse = await fetch(`/api/viewing-extra-items?viewingId=${viewing.id}`);
       const itemsData = await itemsResponse.json();
@@ -263,10 +351,13 @@ export default function ExtraExpensesModal({
       setSuccess(true);
       setShowAddForm(false);
       setEditingId(null);
+      setBaseAmount(null);
       setFormData({
         extraId: "",
         description: "",
         amount: "",
+        category: "",
+        units: "1",
       });
 
       setTimeout(() => {
@@ -280,20 +371,57 @@ export default function ExtraExpensesModal({
     }
   };
 
+  // Helper function to calculate amount based on extra and viewing data
+  const calculateAmount = (
+    extra: ViewingExtra,
+    viewing: Viewing
+  ): number | null => {
+    return calculateExtraAmount(extra, viewing.expectedMinimalRent);
+  };
+
+  // Helper function to strip units suffix from description
+  const stripUnitsSuffix = (description: string): string => {
+    const unitsMatch = description.match(/\.\s*(\d+(?:\.\d+)?)\s*units?$/i);
+    if (unitsMatch && unitsMatch.index !== undefined) {
+      return description.substring(0, unitsMatch.index).trim();
+    }
+    return description;
+  };
+
+  // Helper function to append units suffix to description
+  const appendUnitsSuffix = (description: string, units: string): string => {
+    const baseDescription = stripUnitsSuffix(description);
+    const unitsNum = parseFloat(units) || 1;
+    return `${baseDescription}. ${unitsNum} units`;
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     
-    // If expense type (extraId) is selected, auto-populate description and amount
+    // If expense type (extraId) is selected, auto-populate description, amount, and category
     if (name === "extraId" && value) {
       const selectedExtra = extras.find((extra) => extra.id === parseInt(value, 10));
       if (selectedExtra) {
+        const calculatedBaseAmount = calculateAmount(selectedExtra, viewing);
+        setBaseAmount(calculatedBaseAmount);
+        
+        // Get current units or default to 1
+        const currentUnits = parseFloat(formData.units) || 1;
+        const calculatedAmount = calculatedBaseAmount !== null 
+          ? calculatedBaseAmount * currentUnits 
+          : null;
+        
+        // Append units suffix to description
+        const descriptionWithUnits = appendUnitsSuffix(selectedExtra.description, formData.units);
+        
         setFormData((prev) => ({
           ...prev,
           extraId: value,
-          description: selectedExtra.description,
-          amount: selectedExtra.estimation.toString(),
+          description: descriptionWithUnits,
+          amount: calculatedAmount !== null ? calculatedAmount.toString() : "",
+          category: selectedExtra.category !== undefined && selectedExtra.category !== null ? selectedExtra.category.toString() : "",
         }));
       } else {
         setFormData((prev) => ({
@@ -301,6 +429,34 @@ export default function ExtraExpensesModal({
           [name]: value,
         }));
       }
+    } else if (name === "units") {
+      // When units change, recalculate amount and update description suffix
+      const unitsNum = parseFloat(value) || 1;
+      const updatedDescription = appendUnitsSuffix(formData.description, value);
+      
+      if (baseAmount !== null) {
+        const recalculatedAmount = baseAmount * unitsNum;
+        setFormData((prev) => ({
+          ...prev,
+          units: value,
+          description: updatedDescription,
+          amount: recalculatedAmount.toString(),
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          units: value,
+          description: updatedDescription,
+        }));
+      }
+    } else if (name === "description") {
+      // When description changes, strip any existing units suffix
+      // The units suffix will be reappended when units change or on submit
+      const baseDescription = stripUnitsSuffix(value);
+      setFormData((prev) => ({
+        ...prev,
+        description: baseDescription,
+      }));
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -314,10 +470,7 @@ export default function ExtraExpensesModal({
   };
 
   const formatAmount = (amount: number): string => {
-    return `€${amount.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+    return `€${Math.round(amount).toLocaleString("en-US")}`;
   };
 
   const getAmountColorClass = (amount: number): string => {
@@ -327,6 +480,19 @@ export default function ExtraExpensesModal({
       return "text-red-600 dark:text-red-400";
     }
     return "text-zinc-900 dark:text-zinc-50";
+  };
+
+  const getCategoryLabel = (category: number): string => {
+    switch (category) {
+      case 1:
+        return "Basic";
+      case 2:
+        return "Essential";
+      case 3:
+        return "Extra";
+      default:
+        return "Unknown";
+    }
   };
 
   if (!isOpen) return null;
@@ -347,10 +513,29 @@ export default function ExtraExpensesModal({
               <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
                 Extra Expenses
               </h2>
-              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                Viewing ID: {viewing.id}
-                {viewing.address && ` - ${viewing.address}`}
-              </p>
+              <div className="mt-1 space-y-1">
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  Viewing ID: {viewing.id}
+                  {viewing.address && ` - ${viewing.address}`}
+                </p>
+                {(viewing.price !== null || viewing.size !== null) && (
+                  <div className="flex gap-4 text-sm text-zinc-600 dark:text-zinc-400">
+                    {viewing.price !== null && (
+                      <span className="font-medium">
+                        Price: {formatAmount(viewing.price)}
+                      </span>
+                    )}
+                    {viewing.size !== null && (
+                      <span className="font-medium">
+                        Size: {viewing.size.toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })} m²
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             <button
               onClick={onClose}
@@ -405,9 +590,9 @@ export default function ExtraExpensesModal({
                 </div>
               )}
 
-              {/* Add Button */}
+              {/* Add Buttons */}
               {!showAddForm && editingId === null && (
-                <div className="mb-4">
+                <div className="mb-4 flex gap-2">
                   <button
                     onClick={handleAddClick}
                     className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-100"
@@ -415,6 +600,15 @@ export default function ExtraExpensesModal({
                     <PlusIcon className="h-4 w-4" />
                     Add Expense Item
                   </button>
+                  {basicExtras.length > 0 && (
+                    <button
+                      onClick={() => setShowBulkAddBasics(true)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:bg-zinc-800"
+                    >
+                      <PlusIcon className="h-4 w-4" />
+                      Add Basics
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -448,6 +642,49 @@ export default function ExtraExpensesModal({
                         ))}
                       </select>
                     </div>
+                    <div>
+                      <label
+                        htmlFor="units"
+                        className="block text-sm font-medium text-zinc-900 dark:text-zinc-50 mb-2"
+                      >
+                        Units
+                      </label>
+                      <input
+                        type="number"
+                        id="units"
+                        name="units"
+                        value={formData.units}
+                        onChange={handleChange}
+                        required
+                        min="0.01"
+                        step="0.01"
+                        className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                        placeholder="Enter units"
+                      />
+                    </div>
+                    {formData.extraId && (
+                      <div>
+                        <label
+                          htmlFor="category"
+                          className="block text-sm font-medium text-zinc-900 dark:text-zinc-50 mb-2"
+                        >
+                          Category <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          id="category"
+                          name="category"
+                          value={formData.category}
+                          onChange={handleChange}
+                          required
+                          className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                        >
+                          <option value="">Select category...</option>
+                          <option value="1">Basic</option>
+                          <option value="2">Essential</option>
+                          <option value="3">Extra</option>
+                        </select>
+                      </div>
+                    )}
                     <div>
                       <label
                         htmlFor="description"
@@ -522,6 +759,9 @@ export default function ExtraExpensesModal({
                         <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                           Description
                         </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
+                          Category
+                        </th>
                         <th className="px-4 py-3 text-right text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                           Amount
                         </th>
@@ -543,6 +783,9 @@ export default function ExtraExpensesModal({
                           </td>
                           <td className="px-4 py-3 text-sm text-zinc-900 dark:text-zinc-50">
                             {item.description}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-sm text-zinc-900 dark:text-zinc-50">
+                            {getCategoryLabel(item.extra.category)}
                           </td>
                           <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium">
                             <span className={getAmountColorClass(item.amount)}>
@@ -595,6 +838,29 @@ export default function ExtraExpensesModal({
           )}
         </div>
       </div>
+
+      {/* Bulk Add Basics Modal */}
+      {showBulkAddBasics && (
+        <BulkAddBasicsModal
+          isOpen={showBulkAddBasics}
+          onClose={() => setShowBulkAddBasics(false)}
+          viewing={viewing}
+          basicExtras={basicExtras}
+          onSuccess={async () => {
+            // Reload extra items
+            const itemsResponse = await fetch(`/api/viewing-extra-items?viewingId=${viewing.id}`);
+            const itemsData = await itemsResponse.json();
+            if (itemsData.success && itemsData.data) {
+              setExtraItems(itemsData.data);
+            }
+            setSuccess(true);
+            setTimeout(() => {
+              setSuccess(false);
+              router.refresh();
+            }, 1000);
+          }}
+        />
+      )}
     </div>
   );
 }
