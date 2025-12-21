@@ -52,6 +52,25 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
     },
   });
 
+  // Fetch stakeholders for visibility management (type <= 5)
+  const allStakeholders = await prisma.stakeholder.findMany({
+    where: {
+      type: {
+        lte: 5,
+      },
+      isDeleted: false,
+    },
+    orderBy: {
+      name: "asc",
+    },
+    select: {
+      id: true,
+      name: true,
+      type: true,
+    },
+  });
+
+  // Keep separate stakeholders list for agent selection (type 5)
   const stakeholders = await prisma.stakeholder.findMany({
     where: {
       type: 5,
@@ -63,6 +82,7 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
     select: {
       id: true,
       name: true,
+      type: true,
     },
   });
 
@@ -79,6 +99,7 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
     select: {
       id: true,
       name: true,
+      type: true,
     },
   });
 
@@ -91,6 +112,27 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
       name: true,
     },
   });
+
+  const extrasRaw = await prisma.viewingExtra.findMany({
+    orderBy: {
+      name: "asc",
+    },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      estimation: true,
+    },
+  });
+
+  // Serialize Decimal values to numbers for client component
+  // Prisma Decimal objects cannot be passed to Client Components
+  const extras = extrasRaw.map((extra: any) => ({
+    id: extra.id,
+    name: extra.name,
+    description: extra.description,
+    estimation: Number(extra.estimation),
+  }));
 
   // Serialize Decimal values to numbers for client component
   // Prisma Decimal objects cannot be passed to Client Components
@@ -180,7 +222,7 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
             />
           </div>
         ) : (
-          <ViewingsTable viewings={serializedViewings} stakeholders={stakeholders} scheduleStakeholders={scheduleStakeholders} qualityLevels={qualityLevels} />
+          <ViewingsTable viewings={serializedViewings} stakeholders={stakeholders} allStakeholders={allStakeholders} scheduleStakeholders={scheduleStakeholders} qualityLevels={qualityLevels} extras={extras} />
         )}
 
         <div className="mt-4 flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">

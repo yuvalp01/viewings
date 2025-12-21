@@ -1,5 +1,5 @@
 import Button from "@/app/components/Button";
-import { ListIcon, HomeIcon, PlusIcon } from "@/app/components/icons";
+import { ListIcon, HomeIcon, PlusIcon, CurrencyDollarIcon } from "@/app/components/icons";
 import Link from "next/link";
 
 export default function Home() {
@@ -14,7 +14,7 @@ export default function Home() {
         </div>
 
         {/* Feature Cards */}
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {/* Viewings Card */}
           <div className="group rounded-lg border border-zinc-200 bg-white p-8 transition-shadow hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
             <div className="mb-4 flex items-center gap-4">
@@ -61,6 +61,26 @@ export default function Home() {
               </Link>
             </div>
           </div>
+
+          {/* Viewing Extras Card */}
+          <div className="group rounded-lg border border-zinc-200 bg-white p-8 transition-shadow hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="mb-4 flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-foreground text-background transition-colors group-hover:bg-[#383838] dark:group-hover:bg-[#ccc]">
+                <CurrencyDollarIcon className="h-6 w-6" />
+              </div>
+              <h2 className="text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
+                Viewing Extras
+              </h2>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/viewing-extras"
+                className="inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+              >
+                Manage Extras
+              </Link>
+            </div>
+          </div>
         </div>
 
         {/* Quick Actions */}
@@ -85,6 +105,12 @@ export default function Home() {
               variant="secondary"
               icon={<ListIcon className="h-5 w-5" />}
               tooltip="View all apartments"
+            />
+            <Button
+              href="/viewing-extras"
+              variant="secondary"
+              icon={<CurrencyDollarIcon className="h-5 w-5" />}
+              tooltip="Manage viewing extras"
             />
           </div>
         </div>

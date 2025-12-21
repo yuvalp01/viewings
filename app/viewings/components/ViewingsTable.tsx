@@ -1,21 +1,31 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { EditIcon, TrashIcon, ExternalLinkIcon, DocumentIcon, XIcon, UserIcon, CalendarIcon, CalendarCheckIcon, ClipboardIcon, ElevatorDoorsIcon, NoElevatorIcon, PhotoIcon, MenuIcon } from "@/app/components/icons";
+import { EditIcon, TrashIcon, ExternalLinkIcon, DocumentIcon, XIcon, UserIcon, CalendarIcon, CalendarCheckIcon, ClipboardIcon, ElevatorDoorsIcon, NoElevatorIcon, PhotoIcon, MenuIcon, CurrencyDollarIcon } from "@/app/components/icons";
 import EditViewingModal from "./EditViewingModal";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import ScheduleVisitModal from "./ScheduleVisitModal";
 import VisitDetailsModal from "./VisitDetailsModal";
 import AdditionalDetailsModal from "./AdditionalDetailsModal";
+import ExtraExpensesModal from "./ExtraExpensesModal";
+import VisibilityModal from "./VisibilityModal";
 
 interface Stakeholder {
   id: number;
   name: string;
+  type: number | null;
 }
 
 interface QualityLevel {
   id: number;
   name: string | null;
+}
+
+interface ViewingExtra {
+  id: number;
+  name: string;
+  description: string;
+  estimation: number;
 }
 
 interface Viewing {
@@ -53,9 +63,11 @@ interface Viewing {
 
 interface ViewingsTableProps {
   viewings: Viewing[];
-  stakeholders: Stakeholder[];
+  stakeholders: Stakeholder[]; // For agent selection in EditViewingModal
+  allStakeholders: Stakeholder[]; // For visibility management
   scheduleStakeholders: Stakeholder[];
   qualityLevels: QualityLevel[];
+  extras: ViewingExtra[];
 }
 
 // Helper function to safely convert to number
@@ -209,8 +221,10 @@ function ProgressClipboardIcon({
 export default function ViewingsTable({
   viewings,
   stakeholders,
+  allStakeholders,
   scheduleStakeholders,
   qualityLevels,
+  extras,
 }: ViewingsTableProps) {
   const [editingViewing, setEditingViewing] = useState<Viewing | null>(null);
   const [deletingViewingId, setDeletingViewingId] = useState<number | null>(
@@ -223,7 +237,10 @@ export default function ViewingsTable({
   const [schedulingViewing, setSchedulingViewing] = useState<Viewing | null>(null);
   const [visitDetailsViewing, setVisitDetailsViewing] = useState<Viewing | null>(null);
   const [additionalDetailsViewing, setAdditionalDetailsViewing] = useState<Viewing | null>(null);
+  const [extraExpensesViewing, setExtraExpensesViewing] = useState<Viewing | null>(null);
+  const [visibilityViewing, setVisibilityViewing] = useState<Viewing | null>(null);
   const [openMenuRowId, setOpenMenuRowId] = useState<number | null>(null);
+  const [expenseTotals, setExpenseTotals] = useState<Record<number, number>>({});
 
   const handleEditClick = (viewing: Viewing) => {
     setEditingViewing(viewing);
@@ -280,9 +297,77 @@ export default function ViewingsTable({
     setAdditionalDetailsViewing(null);
   };
 
+  const handleExtraExpensesClick = (viewing: Viewing) => {
+    setExtraExpensesViewing(viewing);
+    setOpenMenuRowId(null);
+  };
+
+  const handleCloseExtraExpenses = () => {
+    setExtraExpensesViewing(null);
+    // Refresh expense totals after modal closes
+    const fetchExpenseTotals = async () => {
+      const totals: Record<number, number> = {};
+      const promises = viewings.map(async (viewing) => {
+        try {
+          const response = await fetch(`/api/viewing-extra-items?viewingId=${viewing.id}`);
+          const data = await response.json();
+          if (data.success && data.data) {
+            const total = data.data.reduce((sum: number, item: any) => sum + item.amount, 0);
+            totals[viewing.id] = total;
+          } else {
+            totals[viewing.id] = 0;
+          }
+        } catch (error) {
+          console.error(`Error fetching expenses for viewing ${viewing.id}:`, error);
+          totals[viewing.id] = 0;
+        }
+      });
+      await Promise.all(promises);
+      setExpenseTotals(totals);
+    };
+    fetchExpenseTotals();
+  };
+
+  const handleVisibilityClick = (viewing: Viewing) => {
+    setVisibilityViewing(viewing);
+    setOpenMenuRowId(null);
+  };
+
+  const handleCloseVisibility = () => {
+    setVisibilityViewing(null);
+  };
+
   const handleMenuToggle = (viewingId: number) => {
     setOpenMenuRowId(openMenuRowId === viewingId ? null : viewingId);
   };
+
+  // Fetch expense totals for all viewings
+  useEffect(() => {
+    const fetchExpenseTotals = async () => {
+      const totals: Record<number, number> = {};
+      const promises = viewings.map(async (viewing) => {
+        try {
+          const response = await fetch(`/api/viewing-extra-items?viewingId=${viewing.id}`);
+          const data = await response.json();
+          if (data.success && data.data) {
+            const total = data.data.reduce((sum: number, item: any) => sum + item.amount, 0);
+            totals[viewing.id] = total;
+          } else {
+            totals[viewing.id] = 0;
+          }
+        } catch (error) {
+          console.error(`Error fetching expenses for viewing ${viewing.id}:`, error);
+          totals[viewing.id] = 0;
+        }
+      });
+      await Promise.all(promises);
+      setExpenseTotals(totals);
+    };
+
+    if (viewings.length > 0) {
+      fetchExpenseTotals();
+    }
+  }, [viewings]);
 
   // Handle click outside to close menu
   useEffect(() => {
@@ -375,6 +460,9 @@ export default function ViewingsTable({
                 </th>
                 <th className="w-16 px-1 py-2 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                   Rent
+                </th>
+                <th className="w-20 px-1 py-2 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
+                  Extra
                 </th>
                 <th className="w-20 px-1 py-2 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                   Agent
@@ -490,6 +578,28 @@ export default function ViewingsTable({
                         : "-";
                     })()}
                   </td>
+                  <td className="whitespace-nowrap px-1 py-2 text-xs font-medium">
+                    {(() => {
+                      const total = expenseTotals[viewing.id] ?? null;
+                      if (total === null) {
+                        return <span className="text-zinc-300 dark:text-zinc-700">-</span>;
+                      }
+                      const colorClass = total > 0 
+                        ? "text-green-600 dark:text-green-400" 
+                        : total < 0 
+                        ? "text-red-600 dark:text-red-400" 
+                        : "text-zinc-900 dark:text-zinc-50";
+                      return (
+                        <button
+                          onClick={() => handleExtraExpensesClick(viewing)}
+                          className={`${colorClass} transition-colors hover:underline cursor-pointer`}
+                          title="Click to manage extra expenses"
+                        >
+                          {total !== 0 ? `€${total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "€0.00"}
+                        </button>
+                      );
+                    })()}
+                  </td>
                   <td className="whitespace-nowrap px-1 py-2 text-xs text-zinc-600 dark:text-zinc-400">
                     {viewing.agentStakeholder ? (
                       <span
@@ -565,6 +675,24 @@ export default function ViewingsTable({
                             >
                               <PhotoIcon className="h-3.5 w-3.5" />
                               <span>Additional Details</span>
+                            </button>
+                            
+                            {/* Extra Expenses */}
+                            <button
+                              onClick={() => handleExtraExpensesClick(viewing)}
+                              className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                            >
+                              <CurrencyDollarIcon className="h-3.5 w-3.5" />
+                              <span>Extra Expenses</span>
+                            </button>
+                            
+                            {/* Manage Visibility */}
+                            <button
+                              onClick={() => handleVisibilityClick(viewing)}
+                              className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                            >
+                              <UserIcon className="h-3.5 w-3.5" />
+                              <span>Manage Visibility</span>
                             </button>
                             
                             {/* Divider */}
@@ -674,6 +802,24 @@ export default function ViewingsTable({
           qualityLevels={qualityLevels}
           isOpen={!!additionalDetailsViewing}
           onClose={handleCloseAdditionalDetails}
+        />
+      )}
+
+      {extraExpensesViewing && (
+        <ExtraExpensesModal
+          viewing={extraExpensesViewing}
+          extras={extras}
+          isOpen={!!extraExpensesViewing}
+          onClose={handleCloseExtraExpenses}
+        />
+      )}
+
+      {visibilityViewing && (
+        <VisibilityModal
+          viewing={visibilityViewing}
+          stakeholders={allStakeholders}
+          isOpen={!!visibilityViewing}
+          onClose={handleCloseVisibility}
         />
       )}
     </>

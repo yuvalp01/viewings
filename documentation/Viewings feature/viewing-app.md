@@ -146,11 +146,11 @@ Add information requiring office analysis.
 
 ### ⭐ Stage 5 — Expected Additional Expenses (Critical for Comparison)
 
-Use `viewingCostItems` to estimate real cost differences between the potential apartments.
+Use `viewingExtraItems` to estimate real cost differences between the potential apartments.
 
 ### **Table fields:**
 
-* AccountId (FK to accounts)
+* ExtraId (FK to lkp_viewingExtras)
 
 * Description
 
