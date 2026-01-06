@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import NewViewingClient from "./NewViewingClient";
 
+export const dynamic = 'force-dynamic';
+
 export default async function NewViewingPage() {
   const stakeholders = await prisma.stakeholder.findMany({
     where: {

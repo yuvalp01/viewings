@@ -1,0 +1,9 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Partial circle with gap at top right (rotated) -->
+  <circle cx="16" cy="16" r="13" stroke="#2563EB" stroke-width="1.2" fill="none" opacity="0.9" stroke-dasharray="26 3" transform="rotate(-45 16 16)"/>
+  
+  <!-- 360 text with glow effect -->
+  <text x="16" y="18" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#2563EB" text-anchor="middle" opacity="0.95">
+    <tspan>360</tspan>
+  </text>
+</svg>
