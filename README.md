@@ -6,7 +6,16 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 Create a `.env.local` file in the root directory with the following variables:
 
+**Database:**
 - `DATABASE_URL` - Azure SQL Database connection string (required)
+
+**Authentication (Google OAuth):**
+- `AUTH_SECRET` - Secret key for JWT signing (required). Generate with: `openssl rand -base64 32`
+- `GOOGLE_CLIENT_ID` - Google OAuth client ID (required)
+- `GOOGLE_CLIENT_SECRET` - Google OAuth client secret (required)
+- `NEXTAUTH_URL` - Base URL of your application (required). Use `http://localhost:3000` for local development
+
+**AI Features:**
 - `OPENAI_API_KEY` - OpenAI API key for AI ad data extraction feature (required)
 - `EXTRACTION_RATE_LIMIT` - Rate limit for ad extraction API (optional, default: 10 requests per hour)
 

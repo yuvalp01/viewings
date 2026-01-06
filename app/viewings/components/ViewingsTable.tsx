@@ -829,7 +829,9 @@ export default function ViewingsTable({
                   }`}>
                     <div className="flex items-center gap-1">
                       {viewing.isArchive && (
-                        <ArchiveIcon className="h-3 w-3 text-orange-500 dark:text-orange-400 flex-shrink-0" title="Archived" />
+                        <span title="Archived">
+                          <ArchiveIcon className="h-3 w-3 text-orange-500 dark:text-orange-400 flex-shrink-0" />
+                        </span>
                       )}
                       <span className={viewing.isArchive ? "line-through decoration-orange-400" : ""}>
                         {viewing.id}

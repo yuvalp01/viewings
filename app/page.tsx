@@ -1,7 +1,7 @@
 import { HomeIcon, PlusIcon, CurrencyDollarIcon } from "@/app/components/icons";
 import Link from "next/link";
 
-export default function Home() {
+export default async function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-50 via-white to-zinc-50 font-sans dark:from-black dark:via-zinc-950 dark:to-black">
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

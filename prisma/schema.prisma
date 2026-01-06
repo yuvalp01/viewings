@@ -105,6 +105,17 @@ model ViewingExtraItem {
   @@schema("dbo")
 }
 
+model User {
+  id           Int       @id @default(autoincrement())
+  stakeholderId Int?     @map("StakeholderId")
+  email        String    @unique @db.NVarChar(255)
+  createdAt    DateTime  @default(now()) @map("CreatedAt") @db.DateTime2
+  isActive     Boolean   @default(true) @map("IsActive")
+
+  @@map("users")
+  @@schema("auth")
+}
+
 model ViewingsVisibility {
   viewingId     Int      @map("ViewingId")
   stakeholderId Int      @map("StakeholderId")
