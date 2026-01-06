@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { EditIcon, TrashIcon, ExternalLinkIcon, DocumentIcon, XIcon, UserIcon, CalendarIcon, CalendarCheckIcon, ClipboardIcon, ElevatorDoorsIcon, NoElevatorIcon, PhotoIcon, MenuIcon, CurrencyDollarIcon, ChevronUpIcon, ChevronDownIcon } from "@/app/components/icons";
+import { EditIcon, TrashIcon, ExternalLinkIcon, DocumentIcon, XIcon, UserIcon, CalendarIcon, CalendarCheckIcon, ClipboardIcon, ElevatorDoorsIcon, NoElevatorIcon, PhotoIcon, MenuIcon, CurrencyDollarIcon, ChevronUpIcon, ChevronDownIcon, ArchiveIcon } from "@/app/components/icons";
 import EditViewingModal from "./EditViewingModal";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
+import ArchiveConfirmationModal from "./ArchiveConfirmationModal";
 import ScheduleVisitModal from "./ScheduleVisitModal";
 import VisitDetailsModal from "./VisitDetailsModal";
 import AdditionalDetailsModal from "./AdditionalDetailsModal";
@@ -28,7 +29,6 @@ interface ViewingExtra {
   name: string;
   description: string;
   estimation: number | null;
-  category: number;
 }
 
 interface Viewing {
@@ -62,6 +62,7 @@ interface Viewing {
   linkToPhotos: string | null;
   metroStationDistanceLevel: number | null;
   transportation: string | null;
+  isArchive: boolean;
 }
 
 interface ViewingsTableProps {
@@ -257,6 +258,7 @@ export default function ViewingsTable({
   const [deletingViewingAddress, setDeletingViewingAddress] = useState<
     string | null
   >(null);
+  const [archivingViewing, setArchivingViewing] = useState<Viewing | null>(null);
   const [viewingComments, setViewingComments] = useState<string | null>(null);
   const [schedulingViewing, setSchedulingViewing] = useState<Viewing | null>(null);
   const [visitDetailsViewing, setVisitDetailsViewing] = useState<Viewing | null>(null);
@@ -281,6 +283,15 @@ export default function ViewingsTable({
     setDeletingViewingId(viewing.id);
     setDeletingViewingAddress(viewing.address);
     setOpenMenuRowId(null);
+  };
+
+  const handleArchiveClick = (viewing: Viewing) => {
+    setArchivingViewing(viewing);
+    setOpenMenuRowId(null);
+  };
+
+  const handleCloseArchive = () => {
+    setArchivingViewing(null);
   };
 
   const handleCloseEdit = () => {
@@ -721,6 +732,9 @@ export default function ViewingsTable({
                 <th className="relative z-10 w-8 px-0.5 py-2 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                   Ad
                 </th>
+                <th className="w-12 min-w-[48px] px-1 py-2 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
+                  Photos
+                </th>
                 <SortableHeader 
                   column="size"
                   className="w-12 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
@@ -802,25 +816,53 @@ export default function ViewingsTable({
               {sortedViewings.map((viewing) => (
                 <tr
                   key={viewing.id}
-                  className="group transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                  className={`group transition-colors ${
+                    viewing.isArchive 
+                      ? "opacity-75 bg-orange-50/30 dark:bg-orange-900/10 border-l-2 border-l-orange-400" 
+                      : ""
+                  } hover:bg-zinc-50 dark:hover:bg-zinc-800/50`}
                 >
-                  <td className="sticky left-0 z-10 w-10 whitespace-nowrap border-r border-zinc-200 bg-white px-1 py-2 text-xs font-medium text-zinc-900 transition-colors group-hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:group-hover:bg-zinc-800/50 sm:px-1.5">
-                    {viewing.id}
+                  <td className={`sticky left-0 z-10 w-10 whitespace-nowrap border-r border-zinc-200 px-1 py-2 text-xs font-medium text-zinc-900 transition-colors dark:border-zinc-700 dark:text-zinc-50 sm:px-1.5 ${
+                    viewing.isArchive 
+                      ? "bg-orange-50/30 dark:bg-orange-900/10 group-hover:bg-orange-100/40 dark:group-hover:bg-orange-900/20" 
+                      : "bg-white group-hover:bg-zinc-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800/50"
+                  }`}>
+                    <div className="flex items-center gap-1">
+                      {viewing.isArchive && (
+                        <ArchiveIcon className="h-3 w-3 text-orange-500 dark:text-orange-400 flex-shrink-0" title="Archived" />
+                      )}
+                      <span className={viewing.isArchive ? "line-through decoration-orange-400" : ""}>
+                        {viewing.id}
+                      </span>
+                    </div>
                   </td>
-                  <td className="sticky left-10 z-10 w-[120px] max-w-[120px] border-r border-zinc-200 bg-white px-1 py-2 text-xs text-zinc-900 transition-colors group-hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:group-hover:bg-zinc-800/50 sm:left-10 sm:px-1.5" style={{ boxSizing: 'border-box' }}>
+                  <td className={`sticky left-10 z-10 w-[120px] max-w-[120px] border-r border-zinc-200 px-1 py-2 text-xs text-zinc-900 transition-colors dark:border-zinc-700 dark:text-zinc-50 sm:left-10 sm:px-1.5 ${
+                    viewing.isArchive 
+                      ? "bg-orange-50/30 dark:bg-orange-900/10 group-hover:bg-orange-100/40 dark:group-hover:bg-orange-900/20" 
+                      : "bg-white group-hover:bg-zinc-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800/50"
+                  }`} style={{ boxSizing: 'border-box' }}>
                     <div className="truncate">
                       {viewing.linkAddress ? (
                         <a
                           href={viewing.linkAddress}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                          className={`hover:underline ${
+                            viewing.isArchive 
+                              ? "text-blue-500 hover:text-blue-700 dark:text-blue-500 dark:hover:text-blue-400 line-through decoration-orange-400" 
+                              : "text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                          }`}
                           title={viewing.address || undefined}
                         >
                           {viewing.address}
                         </a>
                       ) : (
-                        <span title={viewing.address || undefined}>{viewing.address}</span>
+                        <span 
+                          className={viewing.isArchive ? "line-through decoration-orange-400" : ""}
+                          title={viewing.address || undefined}
+                        >
+                          {viewing.address}
+                        </span>
                       )}
                     </div>
                   </td>
@@ -834,6 +876,21 @@ export default function ViewingsTable({
                         title="Open ad link"
                       >
                         <ExternalLinkIcon className="h-3.5 w-3.5" />
+                      </a>
+                    ) : (
+                      <span className="text-zinc-300 dark:text-zinc-700">-</span>
+                    )}
+                  </td>
+                  <td className="w-12 min-w-[48px] whitespace-nowrap px-1 py-2 text-center text-xs">
+                    {viewing.linkToPhotos ? (
+                      <a
+                        href={viewing.linkToPhotos}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center text-zinc-600 hover:text-blue-600 transition-colors dark:text-zinc-400 dark:hover:text-blue-400"
+                        title="Open photos link"
+                      >
+                        <PhotoIcon className="h-3.5 w-3.5" />
                       </a>
                     ) : (
                       <span className="text-zinc-300 dark:text-zinc-700">-</span>
@@ -1117,6 +1174,15 @@ export default function ViewingsTable({
                               <span>Edit Basic Details</span>
                             </button>
                             
+                            {/* Archive/Unarchive */}
+                            <button
+                              onClick={() => handleArchiveClick(viewing)}
+                              className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-orange-600 transition-colors hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20 dark:hover:text-orange-300"
+                            >
+                              <ArchiveIcon className="h-3.5 w-3.5" />
+                              <span>{viewing.isArchive ? 'Unarchive' : 'Archive'}</span>
+                            </button>
+                            
                             {/* Delete */}
                             <button
                               onClick={() => handleDeleteClick(viewing)}
@@ -1152,6 +1218,16 @@ export default function ViewingsTable({
           viewingAddress={deletingViewingAddress}
           isOpen={deletingViewingId !== null}
           onClose={handleCloseDelete}
+        />
+      )}
+
+      {archivingViewing && (
+        <ArchiveConfirmationModal
+          viewingId={archivingViewing.id}
+          viewingAddress={archivingViewing.address}
+          isArchive={archivingViewing.isArchive}
+          isOpen={!!archivingViewing}
+          onClose={handleCloseArchive}
         />
       )}
 

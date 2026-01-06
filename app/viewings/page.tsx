@@ -4,12 +4,13 @@ import Button from "@/app/components/Button";
 import { PlusIcon, HomeIcon, CalendarCheckIcon } from "@/app/components/icons";
 import RefreshButton from "./components/RefreshButton";
 import ScheduledVisitsFilter from "./components/ScheduledVisitsFilter";
+import ShowArchivedFilter from "./components/ShowArchivedFilter";
 import ViewingsTable from "./components/ViewingsTable";
 
 export const dynamic = 'force-dynamic';
 
 interface ViewingsPageProps {
-  searchParams: Promise<{ filter?: string }> | { filter?: string };
+  searchParams: Promise<{ filter?: string; showArchived?: string }> | { filter?: string; showArchived?: string };
 }
 
 export default async function ViewingsPage(props: ViewingsPageProps) {
@@ -28,6 +29,12 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
   const whereClause: any = {
     isDeleted: false,
   };
+
+  // Exclude archived items by default (unless showArchived is true)
+  const showArchived = searchParams?.showArchived === "true";
+  if (!showArchived) {
+    whereClause.isArchive = false;
+  }
 
   // Apply filter if "scheduled" filter is active
   if (searchParams?.filter === "scheduled") {
@@ -122,7 +129,6 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
       name: true,
       description: true,
       estimation: true,
-      category: true,
     },
   });
 
@@ -133,7 +139,6 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
     name: extra.name,
     description: extra.description,
     estimation: extra.estimation ? Number(extra.estimation) : null,
-    category: extra.category,
   }));
 
   // Serialize Decimal values to numbers for client component
@@ -175,6 +180,7 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
       buildingLobbyLevel: viewing.buildingLobbyLevel ?? null,
       buildingMaintenanceLevel: viewing.buildingMaintenanceLevel ?? null,
       expectedMinimalRent: viewing.expectedMinimalRent ? Number(viewing.expectedMinimalRent) : null,
+      isArchive: viewing.isArchive ?? false,
     };
   });
 
@@ -195,6 +201,9 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
           <div className="flex gap-4">
             <Suspense fallback={<div className="w-12 h-12" />}>
               <ScheduledVisitsFilter />
+            </Suspense>
+            <Suspense fallback={<div className="w-12 h-12" />}>
+              <ShowArchivedFilter />
             </Suspense>
             <RefreshButton />
             <Button

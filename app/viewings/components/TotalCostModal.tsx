@@ -10,7 +10,6 @@ interface ViewingExtraItem {
   extra: {
     id: number;
     name: string;
-    category: number;
   };
   description: string;
   amount: number;

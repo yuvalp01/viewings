@@ -50,6 +50,7 @@ model Viewing {
   viewingDate           DateTime? @map("ViewingDate") @db.DateTime2
   viewedByStakeholderId Int?      @map("ViewedByStakeholderId")
   isDeleted             Boolean   @default(false) @map("IsDeleted")
+  isArchive             Boolean   @default(false) @map("IsArchive")
 
   // Visit details fields
   isSecurityDoor               Boolean? @map("IsSecurityDoor")
@@ -81,7 +82,6 @@ model ViewingExtra {
   name              String   @map("Name") @db.VarChar(20)
   description       String   @map("Description") @db.NVarChar(Max)
   estimation        Decimal? @map("Estimation") @db.Decimal(18, 2)
-  category          Int      @map("Category")
 
   viewingExtraItems ViewingExtraItem[]
 
@@ -94,7 +94,6 @@ model ViewingExtraItem {
   viewingId   Int      @map("ViewingId")
   extraId     Int      @map("ExtraId")
   type        Int      @map("Type")
-  category    Int      @map("Category")
   description String   @map("Description") @db.NVarChar(Max)
   amount      Decimal  @map("Amount") @db.Decimal(18, 2)
   createdAt   DateTime @default(now()) @map("CreatedAt") @db.DateTime2

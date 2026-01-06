@@ -65,6 +65,7 @@ CREATE TABLE dbo.viewings (
    -- Meta
    ApartmentId                 INT             NULL,
    IsDeleted                   BIT             NOT NULL DEFAULT (0)
+   IsArchive                   BIT             NOT NULL DEFAULT (0)
 );
 
 
@@ -79,8 +80,7 @@ CREATE TABLE auth.viewingsVisibility (
 
 CREATE TABLE dbo.lkp_viewingExtras (
   Id                 INT IDENTITY(1,1) PRIMARY KEY,
-  Name               VARCHAR(20) NOT NULL,
-  Category           INT NOT NULL, -- 1 Basic, 2 Essensial, 3 Extra       
+  Name               VARCHAR(20) NOT NULL, 
   Description        NVARCHAR(MAX) NOT NULL,
   Estimation             DECIMAL(18,2) NULL
 );
@@ -134,7 +134,6 @@ CREATE TABLE dbo.viewingExtraItems (
    ViewingId INT NOT NULL,
    ExtraId          INT NOT NULL,               -- FK → lkp_viewingExtras table
    Type          INT NOT NULL,               -- FK → lkp_viewingExtras table
-   Category           INT NOT NULL,               -- FK → lkp_viewingExtras table
    Description        NVARCHAR(MAX) NOT NULL,
    Amount             DECIMAL(18,2) NOT NULL,     -- positive = expense, negative = saving
    CreatedAt          DATETIME2 NOT NULL DEFAULT SYSDATETIME(),

@@ -11,7 +11,6 @@ interface ViewingExtra {
   name: string;
   description: string;
   estimation: number | null;
-  category: number;
 }
 
 interface ViewingExtraItem {
@@ -43,7 +42,6 @@ interface FormData {
   extraId: string;
   description: string;
   amount: string;
-  category: string;
   units: string;
 }
 
@@ -64,13 +62,12 @@ export default function ExtraExpensesModal({
   const [showBulkAddBasics, setShowBulkAddBasics] = useState(false);
   const [baseAmount, setBaseAmount] = useState<number | null>(null);
 
-  // Filter basic extras (category 1)
-  const basicExtras = extras.filter((extra) => extra.category === 1);
+  // Filter basic extras (for bulk add - keeping this for now but may need to adjust)
+  const basicExtras = extras; // No longer filtering by category
   const [formData, setFormData] = useState<FormData>({
     extraId: "",
     description: "",
     amount: "",
-    category: "",
     units: "1",
   });
 
@@ -105,7 +102,6 @@ export default function ExtraExpensesModal({
         extraId: "",
         description: "",
         amount: "",
-        category: "",
         units: "1",
       });
     }
@@ -123,7 +119,6 @@ export default function ExtraExpensesModal({
             extraId: "",
             description: "",
             amount: "",
-            category: "",
             units: "1",
           });
         } else {
@@ -155,7 +150,6 @@ export default function ExtraExpensesModal({
       extraId: "",
       description: "",
       amount: "",
-      category: "",
       units: "1",
     });
     setError(null);
@@ -183,7 +177,6 @@ export default function ExtraExpensesModal({
       extraId: item.extraId.toString(),
       description: descriptionWithoutUnits,
       amount: item.amount.toString(),
-      category: item.extra.category !== undefined && item.extra.category !== null ? item.extra.category.toString() : "",
       units: extractedUnits,
     });
     setError(null);
@@ -197,7 +190,6 @@ export default function ExtraExpensesModal({
       extraId: "",
       description: "",
       amount: "",
-      category: "",
       units: "1",
     });
     setError(null);
@@ -247,22 +239,9 @@ export default function ExtraExpensesModal({
 
     const extraIdNum = parseInt(formData.extraId, 10);
     const amountNum = parseFloat(formData.amount);
-    const categoryNum = parseInt(formData.category, 10);
 
     if (isNaN(extraIdNum)) {
       setError("Please select an expense type");
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (!formData.category || isNaN(categoryNum)) {
-      setError("Category is required");
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (![1, 2, 3].includes(categoryNum)) {
-      setError("Category must be Basic, Essential, or Extra");
       setIsSubmitting(false);
       return;
     }
@@ -321,26 +300,6 @@ export default function ExtraExpensesModal({
         throw new Error(data.error || "Failed to save extra item");
       }
 
-      // Update the ViewingExtra's category if it has changed
-      const selectedExtra = extras.find((e) => e.id === extraIdNum);
-      if (selectedExtra && selectedExtra.category !== categoryNum) {
-        try {
-          await fetch("/api/viewing-extras", {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              id: extraIdNum,
-              category: categoryNum,
-            }),
-          });
-        } catch (err) {
-          console.error("Error updating viewing extra category:", err);
-          // Don't fail the whole operation if category update fails
-        }
-      }
-
       // Reload extra items
       const itemsResponse = await fetch(`/api/viewing-extra-items?viewingId=${viewing.id}`);
       const itemsData = await itemsResponse.json();
@@ -356,7 +315,6 @@ export default function ExtraExpensesModal({
         extraId: "",
         description: "",
         amount: "",
-        category: "",
         units: "1",
       });
 
@@ -400,7 +358,7 @@ export default function ExtraExpensesModal({
   ) => {
     const { name, value } = e.target;
     
-    // If expense type (extraId) is selected, auto-populate description, amount, and category
+    // If expense type (extraId) is selected, auto-populate description and amount
     if (name === "extraId" && value) {
       const selectedExtra = extras.find((extra) => extra.id === parseInt(value, 10));
       if (selectedExtra) {
@@ -421,7 +379,6 @@ export default function ExtraExpensesModal({
           extraId: value,
           description: descriptionWithUnits,
           amount: calculatedAmount !== null ? calculatedAmount.toString() : "",
-          category: selectedExtra.category !== undefined && selectedExtra.category !== null ? selectedExtra.category.toString() : "",
         }));
       } else {
         setFormData((prev) => ({
@@ -480,19 +437,6 @@ export default function ExtraExpensesModal({
       return "text-red-600 dark:text-red-400";
     }
     return "text-zinc-900 dark:text-zinc-50";
-  };
-
-  const getCategoryLabel = (category: number): string => {
-    switch (category) {
-      case 1:
-        return "Basic";
-      case 2:
-        return "Essential";
-      case 3:
-        return "Extra";
-      default:
-        return "Unknown";
-    }
   };
 
   if (!isOpen) return null;
@@ -662,29 +606,6 @@ export default function ExtraExpensesModal({
                         placeholder="Enter units"
                       />
                     </div>
-                    {formData.extraId && (
-                      <div>
-                        <label
-                          htmlFor="category"
-                          className="block text-sm font-medium text-zinc-900 dark:text-zinc-50 mb-2"
-                        >
-                          Category <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          id="category"
-                          name="category"
-                          value={formData.category}
-                          onChange={handleChange}
-                          required
-                          className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                        >
-                          <option value="">Select category...</option>
-                          <option value="1">Basic</option>
-                          <option value="2">Essential</option>
-                          <option value="3">Extra</option>
-                        </select>
-                      </div>
-                    )}
                     <div>
                       <label
                         htmlFor="description"
@@ -759,9 +680,6 @@ export default function ExtraExpensesModal({
                         <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                           Description
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
-                          Category
-                        </th>
                         <th className="px-4 py-3 text-right text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                           Amount
                         </th>
@@ -783,9 +701,6 @@ export default function ExtraExpensesModal({
                           </td>
                           <td className="px-4 py-3 text-sm text-zinc-900 dark:text-zinc-50">
                             {item.description}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-sm text-zinc-900 dark:text-zinc-50">
-                            {getCategoryLabel(item.extra.category)}
                           </td>
                           <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium">
                             <span className={getAmountColorClass(item.amount)}>

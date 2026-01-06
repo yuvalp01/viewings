@@ -78,7 +78,6 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            category: true,
           },
         },
       },
@@ -191,7 +190,6 @@ export async function POST(request: NextRequest) {
         viewingId: body.viewingId,
         extraId: body.extraId,
         type: body.extraId, // Type appears to be the same as ExtraId based on DB structure
-        category: extra.category,
         description: body.description.trim(),
         amount: body.amount,
       },
@@ -200,7 +198,6 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            category: true,
           },
         },
       },
@@ -347,7 +344,6 @@ async function handleBulkCreate(items: any[]) {
             viewingId: item.viewingId,
             extraId: item.extraId,
             type: item.extraId, // Type appears to be the same as ExtraId based on DB structure
-            category: extra.category,
             description: item.description.trim(),
             amount: item.amount,
           },
@@ -356,7 +352,6 @@ async function handleBulkCreate(items: any[]) {
               select: {
                 id: true,
                 name: true,
-                category: true,
               },
             },
           },
@@ -470,9 +465,6 @@ export async function PUT(request: NextRequest) {
     if (body.extraId !== undefined) {
       updateData.extraId = body.extraId;
       updateData.type = body.extraId; // Type is the same as ExtraId
-      if (extra) {
-        updateData.category = extra.category;
-      }
     }
     if (body.description !== undefined) {
       updateData.description = body.description.trim();
@@ -490,7 +482,6 @@ export async function PUT(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            category: true,
           },
         },
       },

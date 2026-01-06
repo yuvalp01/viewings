@@ -30,15 +30,6 @@ function validateViewingExtraData(body: any): { error?: string } {
     }
   }
 
-  if (body.category !== undefined) {
-    if (typeof body.category !== "number") {
-      return { error: "Category must be a number" };
-    }
-    if (![1, 2, 3].includes(body.category)) {
-      return { error: "Category must be 1 (Basic), 2 (Essential), or 3 (Extra)" };
-    }
-  }
-
   return {};
 }
 
@@ -56,7 +47,6 @@ export async function GET(request: NextRequest) {
       name: extra.name,
       description: extra.description,
       estimation: extra.estimation ? Number(extra.estimation) : null,
-      category: extra.category,
     }));
 
     return NextResponse.json(
@@ -68,8 +58,9 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     console.error("Error fetching viewing extras:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to fetch viewing extras" },
+      { error: "Failed to fetch viewing extras", details: errorMessage },
       { status: 500 }
     );
   }
@@ -108,20 +99,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (body.category === undefined || typeof body.category !== "number") {
-      return NextResponse.json(
-        { error: "Category is required and must be a number" },
-        { status: 400 }
-      );
-    }
-
-    if (![1, 2, 3].includes(body.category)) {
-      return NextResponse.json(
-        { error: "Category must be 1 (Basic), 2 (Essential), or 3 (Extra)" },
-        { status: 400 }
-      );
-    }
-
     // Check if name already exists
     const existingExtra = await prisma.viewingExtra.findFirst({
       where: {
@@ -142,7 +119,6 @@ export async function POST(request: NextRequest) {
         name: body.name.trim(),
         description: body.description.trim(),
         estimation: body.estimation !== undefined && body.estimation !== null ? body.estimation : null,
-        category: body.category,
       },
     });
 
@@ -155,7 +131,6 @@ export async function POST(request: NextRequest) {
           name: viewingExtra.name,
           description: viewingExtra.description,
           estimation: viewingExtra.estimation ? Number(viewingExtra.estimation) : null,
-          category: viewingExtra.category,
         },
       },
       { status: 201 }
@@ -243,9 +218,6 @@ export async function PUT(request: NextRequest) {
     if (body.estimation !== undefined) {
       updateData.estimation = body.estimation !== null ? body.estimation : null;
     }
-    if (body.category !== undefined) {
-      updateData.category = body.category;
-    }
 
     // Update viewing extra
     const updatedExtra = await prisma.viewingExtra.update({
@@ -262,7 +234,6 @@ export async function PUT(request: NextRequest) {
           name: updatedExtra.name,
           description: updatedExtra.description,
           estimation: updatedExtra.estimation ? Number(updatedExtra.estimation) : null,
-          category: updatedExtra.category,
         },
       },
       { status: 200 }

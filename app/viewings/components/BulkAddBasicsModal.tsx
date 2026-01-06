@@ -9,7 +9,6 @@ interface ViewingExtra {
   name: string;
   description: string;
   estimation: number | null;
-  category: number;
 }
 
 interface Viewing {
@@ -361,9 +360,6 @@ export default function BulkAddBasicsModal({
                         <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                           Description
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
-                          Category
-                        </th>
                         <th className="px-4 py-3 text-right text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                           Amount
                         </th>
@@ -394,9 +390,6 @@ export default function BulkAddBasicsModal({
                                 className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
                                 placeholder="Enter description"
                               />
-                            </td>
-                            <td className="whitespace-nowrap px-4 py-3 text-sm text-zinc-900 dark:text-zinc-50">
-                              Basic
                             </td>
                             <td className="whitespace-nowrap px-4 py-3 text-sm">
                               <input

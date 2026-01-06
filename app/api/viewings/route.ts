@@ -275,6 +275,9 @@ export async function PUT(request: NextRequest) {
     if (body.comments !== undefined) {
       updateData.comments = body.comments?.trim() || null;
     }
+    if (body.isArchive !== undefined) {
+      updateData.isArchive = body.isArchive ?? false;
+    }
 
     // Validate agentStakeholderId if provided
     if (body.agentStakeholderId !== undefined) {

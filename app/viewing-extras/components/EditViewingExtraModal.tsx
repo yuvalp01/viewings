@@ -9,7 +9,6 @@ interface ViewingExtra {
   name: string;
   description: string;
   estimation: number | null;
-  category: number;
 }
 
 interface EditViewingExtraModalProps {
@@ -23,7 +22,6 @@ interface FormData {
   name: string;
   description: string;
   estimation: string;
-  category: string;
 }
 
 export default function EditViewingExtraModal({
@@ -39,7 +37,6 @@ export default function EditViewingExtraModal({
     name: "",
     description: "",
     estimation: "",
-    category: "",
   });
 
   useEffect(() => {
@@ -48,14 +45,12 @@ export default function EditViewingExtraModal({
         name: extra.name,
         description: extra.description,
         estimation: extra.estimation !== null && extra.estimation !== undefined ? extra.estimation.toString() : "",
-        category: extra.category !== undefined && extra.category !== null ? extra.category.toString() : "",
       });
     } else {
       setFormData({
         name: "",
         description: "",
         estimation: "",
-        category: "",
       });
     }
     setError(null);
@@ -90,7 +85,6 @@ export default function EditViewingExtraModal({
     setError(null);
 
     const estimationNum = formData.estimation.trim() ? parseFloat(formData.estimation) : null;
-    const categoryNum = parseInt(formData.category, 10);
 
     if (!formData.name.trim()) {
       setError("Name is required");
@@ -110,18 +104,6 @@ export default function EditViewingExtraModal({
       return;
     }
 
-    if (!formData.category || isNaN(categoryNum)) {
-      setError("Category is required");
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (![1, 2, 3].includes(categoryNum)) {
-      setError("Category must be Basic, Essential, or Extra");
-      setIsSubmitting(false);
-      return;
-    }
-
     if (formData.estimation.trim() && isNaN(estimationNum!)) {
       setError("Estimation must be a valid number");
       setIsSubmitting(false);
@@ -137,13 +119,11 @@ export default function EditViewingExtraModal({
             name: formData.name.trim(),
             description: formData.description.trim(),
             estimation: estimationNum,
-            category: categoryNum,
           }
         : {
             name: formData.name.trim(),
             description: formData.description.trim(),
             estimation: estimationNum,
-            category: categoryNum,
           };
 
       const response = await fetch(url, {
@@ -259,28 +239,6 @@ export default function EditViewingExtraModal({
                 className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
                 placeholder="Enter description"
               />
-            </div>
-
-            <div>
-              <label
-                htmlFor="category"
-                className="block text-sm font-medium text-zinc-900 dark:text-zinc-50 mb-2"
-              >
-                Category <span className="text-red-500">*</span>
-              </label>
-              <select
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                required
-                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-              >
-                <option value="">Select category...</option>
-                <option value="1">Basic</option>
-                <option value="2">Essential</option>
-                <option value="3">Extra</option>
-              </select>
             </div>
 
             <div>
