@@ -64,7 +64,7 @@ CREATE TABLE dbo.viewings (
 
    -- Meta
    ApartmentId                 INT             NULL,
-   IsDeleted                   BIT             NOT NULL DEFAULT (0)
+   IsDeleted                   BIT             NOT NULL DEFAULT (0),
    IsArchive                   BIT             NOT NULL DEFAULT (0)
 );
 
