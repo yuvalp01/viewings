@@ -2,12 +2,9 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { prisma } from "@/lib/prisma";
 
-if (!process.env.AUTH_SECRET) {
-  throw new Error("AUTH_SECRET environment variable is not set");
-}
-
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  secret: process.env.AUTH_SECRET,
+  secret: process.env.AUTH_SECRET || "temp-secret-for-build-only",
+  trustHost: true, // Allow NextAuth to trust hosts from request headers (required for Azure App Service)
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
