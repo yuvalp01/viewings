@@ -7,7 +7,10 @@ This document provides instructions for configuring Azure App Service to run the
 - Azure App Service Web App (Linux) created
 - GitHub repository connected to Azure Deployment Center
 - Required secrets configured in GitHub Actions:
-  - `DATABASE_URL` - Azure SQL Database connection string
+  - `SQL_SERVER` - Database server address (e.g., `myserver.database.windows.net`)
+  - `SQL_USER` - Database username
+  - `SQL_PASSWORD` - Database password
+  - `SQL_DATABASE` - Database name
   - `AZUREAPPSERVICE_PUBLISHPROFILE_VIEWINGS` - Azure publish profile
 
 ## Azure App Service Configuration
@@ -51,7 +54,10 @@ Set the following application settings (environment variables):
 
 | Name | Value | Description |
 |------|-------|-------------|
-| `DATABASE_URL` | Your Azure SQL connection string | Required for Prisma database access |
+| `SQL_SERVER` | Your database server (e.g., `myserver.database.windows.net`) | Required for Prisma database access |
+| `SQL_USER` | Your database username | Required for Prisma database access |
+| `SQL_PASSWORD` | Your database password | Required for Prisma database access |
+| `SQL_DATABASE` | Your database name | Required for Prisma database access |
 | `OPENAI_API_KEY` | Your OpenAI API key | Required for AI ad data extraction feature |
 | `EXTRACTION_RATE_LIMIT` | `10` (optional) | Rate limit for ad extraction API |
 | `NODE_ENV` | `production` | Set to production mode |
@@ -99,14 +105,14 @@ After deployment:
 
 ### Database connection errors
 
-- Verify `DATABASE_URL` is correctly set in Application settings
+- Verify `SQL_SERVER`, `SQL_USER`, `SQL_PASSWORD`, and `SQL_DATABASE` are correctly set in Application settings
 - Check Azure SQL firewall rules allow connections from App Service
 - Ensure Prisma Client is generated (check if `node_modules/@prisma/client` exists)
 
 ### Build errors during deployment
 
 - Check GitHub Actions workflow logs
-- Verify `DATABASE_URL` secret is set in GitHub repository secrets
+- Verify `SQL_SERVER`, `SQL_USER`, `SQL_PASSWORD`, and `SQL_DATABASE` secrets are set in GitHub repository secrets
 - Ensure Prisma schema is valid
 
 ## Deployment Flow

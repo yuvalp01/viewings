@@ -14,10 +14,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Prisma generate doesn't need DATABASE_URL - it only needs the schema
+# Prisma generate doesn't need database connection - it only needs the schema
 RUN npx prisma generate
 
-# Next.js build doesn't need DATABASE_URL since pages are dynamic (rendered at request time)
+# Next.js build doesn't need database connection since pages are dynamic (rendered at request time)
 RUN npm run build
 
 # ---------- RUNTIME ----------
@@ -37,5 +37,5 @@ COPY --from=builder /app/prisma ./prisma
 EXPOSE 8080
 
 # Run Next.js production server on the PORT Azure provides
-# DATABASE_URL will be provided at runtime via Azure App Service environment variables
+# Database environment variables (SQL_SERVER, SQL_USER, SQL_PASSWORD, SQL_DATABASE) will be provided at runtime via Azure App Service environment variables
 CMD ["sh", "-c", "node server.js -p ${PORT}"]

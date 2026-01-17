@@ -7,7 +7,10 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 Create a `.env.local` file in the root directory with the following variables:
 
 **Database:**
-- `DATABASE_URL` - Azure SQL Database connection string (required)
+- `SQL_SERVER` - Database server address (e.g., `myserver.database.windows.net` for Azure SQL) (required)
+- `SQL_USER` - Database username (required)
+- `SQL_PASSWORD` - Database password (required)
+- `SQL_DATABASE` - Database name (required)
 
 **Authentication (Google OAuth):**
 - `AUTH_SECRET` - Secret key for JWT signing (required). Generate with: `openssl rand -base64 32`

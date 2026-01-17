@@ -1,3 +1,4 @@
 # docker-local - build image locally
+# Note: Database connection variables (SQL_SERVER, SQL_USER, SQL_PASSWORD, SQL_DATABASE) should be set as environment variables at runtime
 docker build -f Dockerfile-s \
-  --build-arg DATABASE_URL=$DATABASE_URL  -t viewing-s:latest \ 
+  -t viewing-s:latest \ 
