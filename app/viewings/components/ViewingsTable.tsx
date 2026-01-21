@@ -113,6 +113,30 @@ function getOverallLevelBorderColor(overallLevel: number | null, isArchive: bool
   return "";
 }
 
+// Get background color classes based on overallLevel
+// 2: light green transparent, 3: darker green transparent
+function getOverallLevelBgColor(overallLevel: number | null, isArchive: boolean): string {
+  // Archived items take precedence with orange background
+  if (isArchive) {
+    return "";
+  }
+  
+  if (overallLevel === null || overallLevel === undefined) {
+    return "";
+  }
+  
+  if (overallLevel === 2) {
+    return "bg-green-50/50 dark:bg-green-900/20";
+  }
+  
+  if (overallLevel === 3) {
+    return "bg-green-100/60 dark:bg-green-900/30";
+  }
+  
+  // 0 or 1: no background color
+  return "";
+}
+
 // Calculate total cost for a viewing
 function calculateTotalCost(viewing: Viewing, extraItemsTotal: number): number {
   const price = viewing.price ?? 0;
@@ -859,13 +883,13 @@ export default function ViewingsTable({
                   className={`group transition-colors ${
                     viewing.isArchive 
                       ? "opacity-75 bg-orange-50/30 dark:bg-orange-900/10 border-l-2 border-l-orange-400" 
-                      : getOverallLevelBorderColor(viewing.overallLevel, viewing.isArchive)
+                      : `${getOverallLevelBorderColor(viewing.overallLevel, viewing.isArchive)} ${getOverallLevelBgColor(viewing.overallLevel, viewing.isArchive)}`
                   } hover:bg-zinc-50 dark:hover:bg-zinc-800/50`}
                 >
                   <td className={`sticky left-0 z-10 w-10 whitespace-nowrap border-r border-zinc-200 px-1 py-2 text-xs font-medium text-zinc-900 transition-colors dark:border-zinc-700 dark:text-zinc-50 sm:px-1.5 ${
                     viewing.isArchive 
                       ? "bg-orange-50/30 dark:bg-orange-900/10 group-hover:bg-orange-100/40 dark:group-hover:bg-orange-900/20" 
-                      : "bg-white group-hover:bg-zinc-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800/50"
+                      : `${getOverallLevelBgColor(viewing.overallLevel, viewing.isArchive) || "bg-white dark:bg-zinc-900"} group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800/50`
                   }`}>
                     <div className="flex items-center gap-1">
                       {viewing.isArchive && (
@@ -881,7 +905,7 @@ export default function ViewingsTable({
                   <td className={`sticky left-10 z-10 w-[120px] max-w-[120px] border-r border-zinc-200 px-1 py-2 text-xs text-zinc-900 transition-colors dark:border-zinc-700 dark:text-zinc-50 sm:left-10 sm:px-1.5 ${
                     viewing.isArchive 
                       ? "bg-orange-50/30 dark:bg-orange-900/10 group-hover:bg-orange-100/40 dark:group-hover:bg-orange-900/20" 
-                      : "bg-white group-hover:bg-zinc-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800/50"
+                      : `${getOverallLevelBgColor(viewing.overallLevel, viewing.isArchive) || "bg-white dark:bg-zinc-900"} group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800/50`
                   }`} style={{ boxSizing: 'border-box' }}>
                     <div className="truncate">
                       {viewing.linkAddress ? (
@@ -1266,14 +1290,14 @@ export default function ViewingsTable({
               className={`rounded-lg border ${
                 viewing.isArchive
                   ? "border-orange-300 bg-orange-50/30 dark:border-orange-700 dark:bg-orange-900/10 border-l-2 border-l-orange-400"
-                  : `border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 ${getOverallLevelBorderColor(viewing.overallLevel, viewing.isArchive)}`
+                  : `border-zinc-200 dark:border-zinc-800 ${getOverallLevelBorderColor(viewing.overallLevel, viewing.isArchive)} ${getOverallLevelBgColor(viewing.overallLevel, viewing.isArchive) || "bg-white dark:bg-zinc-900"}`
               } shadow-sm transition-colors`}
             >
               {/* Card Header */}
               <div className={`px-4 py-3 ${
                 viewing.isArchive
                   ? "bg-orange-50/50 dark:bg-orange-900/20"
-                  : "bg-zinc-50 dark:bg-zinc-800/50"
+                  : `${getOverallLevelBgColor(viewing.overallLevel, viewing.isArchive) || "bg-zinc-50 dark:bg-zinc-800/50"}`
               }`}>
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
