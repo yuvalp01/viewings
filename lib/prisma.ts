@@ -17,13 +17,27 @@ function createPrismaClient(): PrismaClient {
     );
   }
 
-  // Construct SQL Server connection string
-  // Format: sqlserver://SERVER:PORT;database=DATABASE;user=USER;password=PASSWORD;encrypt=true
-  // For Azure SQL, server format is typically: SERVER.database.windows.net
-  // Port 1433 is the standard SQL Server port
-  const connectionString = `sqlserver://${dbServer}:1433;database=${dbName};user=${dbUser};password=${dbPassword};encrypt=true`;
-
-  const adapter = new PrismaMssql(connectionString);
+  // Use config object approach for better Azure SQL compatibility
+  // This provides more reliable connection handling and clearer timeout settings
+  const adapter = new PrismaMssql({
+    server: dbServer,
+    port: 1433,
+    database: dbName,
+    user: dbUser,
+    password: dbPassword,
+    options: {
+      encrypt: true, // Required for Azure SQL Database
+      trustServerCertificate: false, // Verify certificate (more secure)
+      connectTimeout: 10000, // 10 seconds - increased for Azure network latency
+      requestTimeout: 30000, // 30 seconds - timeout for individual queries
+      enableArithAbort: true, // Recommended for SQL Server
+    },
+    pool: {
+      max: 10, // Maximum pool size
+      min: 0, // Minimum pool size
+      idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
+    },
+  });
   
   return new PrismaClient({
     adapter,
