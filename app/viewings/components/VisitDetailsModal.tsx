@@ -202,26 +202,26 @@ export default function VisitDetailsModal({
               buildingSecurityDoorsPercent: details.buildingSecurityDoorsPercent
                 ? details.buildingSecurityDoorsPercent.toString()
                 : "",
-              aluminumWindowsLevel: details.aluminumWindowsLevel
+              aluminumWindowsLevel: details.aluminumWindowsLevel !== null && details.aluminumWindowsLevel !== undefined
                 ? details.aluminumWindowsLevel.toString()
                 : "",
-              renovationKitchenLevel: details.renovationKitchenLevel
+              renovationKitchenLevel: details.renovationKitchenLevel !== null && details.renovationKitchenLevel !== undefined
                 ? details.renovationKitchenLevel.toString()
                 : "",
-              renovationBathroomLevel: details.renovationBathroomLevel
+              renovationBathroomLevel: details.renovationBathroomLevel !== null && details.renovationBathroomLevel !== undefined
                 ? details.renovationBathroomLevel.toString()
                 : "",
-              renovationLevel: details.renovationLevel
+              renovationLevel: details.renovationLevel !== null && details.renovationLevel !== undefined
                 ? details.renovationLevel.toString()
                 : "",
-              viewLevel: details.viewLevel ? details.viewLevel.toString() : "",
-              balconyLevel: details.balconyLevel
+              viewLevel: details.viewLevel !== null && details.viewLevel !== undefined ? details.viewLevel.toString() : "",
+              balconyLevel: details.balconyLevel !== null && details.balconyLevel !== undefined
                 ? details.balconyLevel.toString()
                 : "",
-              buildingLobbyLevel: details.buildingLobbyLevel
+              buildingLobbyLevel: details.buildingLobbyLevel !== null && details.buildingLobbyLevel !== undefined
                 ? details.buildingLobbyLevel.toString()
                 : "",
-              buildingMaintenanceLevel: details.buildingMaintenanceLevel
+              buildingMaintenanceLevel: details.buildingMaintenanceLevel !== null && details.buildingMaintenanceLevel !== undefined
                 ? details.buildingMaintenanceLevel.toString()
                 : "",
               comments: details.comments || "",
@@ -326,26 +326,26 @@ export default function VisitDetailsModal({
           buildingSecurityDoorsPercent: formData.buildingSecurityDoorsPercent
             ? parseInt(formData.buildingSecurityDoorsPercent)
             : null,
-          aluminumWindowsLevel: formData.aluminumWindowsLevel
+          aluminumWindowsLevel: formData.aluminumWindowsLevel !== ""
             ? parseInt(formData.aluminumWindowsLevel)
             : null,
-          renovationKitchenLevel: formData.renovationKitchenLevel
+          renovationKitchenLevel: formData.renovationKitchenLevel !== ""
             ? parseInt(formData.renovationKitchenLevel)
             : null,
-          renovationBathroomLevel: formData.renovationBathroomLevel
+          renovationBathroomLevel: formData.renovationBathroomLevel !== ""
             ? parseInt(formData.renovationBathroomLevel)
             : null,
-          renovationLevel: formData.renovationLevel
+          renovationLevel: formData.renovationLevel !== ""
             ? parseInt(formData.renovationLevel)
             : null,
-          viewLevel: formData.viewLevel ? parseInt(formData.viewLevel) : null,
-          balconyLevel: formData.balconyLevel
+          viewLevel: formData.viewLevel !== "" ? parseInt(formData.viewLevel) : null,
+          balconyLevel: formData.balconyLevel !== ""
             ? parseInt(formData.balconyLevel)
             : null,
-          buildingLobbyLevel: formData.buildingLobbyLevel
+          buildingLobbyLevel: formData.buildingLobbyLevel !== ""
             ? parseInt(formData.buildingLobbyLevel)
             : null,
-          buildingMaintenanceLevel: formData.buildingMaintenanceLevel
+          buildingMaintenanceLevel: formData.buildingMaintenanceLevel !== ""
             ? parseInt(formData.buildingMaintenanceLevel)
             : null,
           comments: formData.comments.trim() || null,
