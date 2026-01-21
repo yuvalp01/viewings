@@ -273,6 +273,7 @@ export default function ViewingsTable({
   const [isSavingCell, setIsSavingCell] = useState(false);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
 
   const handleEditClick = (viewing: Viewing) => {
     setEditingViewing(viewing);
@@ -389,6 +390,18 @@ export default function ViewingsTable({
 
   const handleMenuToggle = (viewingId: number) => {
     setOpenMenuRowId(openMenuRowId === viewingId ? null : viewingId);
+  };
+
+  const handleCardToggle = (viewingId: number) => {
+    setExpandedCards((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(viewingId)) {
+        newSet.delete(viewingId);
+      } else {
+        newSet.add(viewingId);
+      }
+      return newSet;
+    });
   };
 
   const handleCellEditStart = (viewingId: number, field: 'price' | 'rent', currentValue: number | null) => {
@@ -711,7 +724,8 @@ export default function ViewingsTable({
 
   return (
     <>
-      <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="overflow-x-auto">
           <table className="w-full divide-y divide-zinc-200 dark:divide-zinc-800" style={{ tableLayout: 'fixed', width: '100%' }}>
             <thead className="bg-zinc-50 dark:bg-zinc-800/50">
@@ -1203,6 +1217,426 @@ export default function ViewingsTable({
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="block md:hidden space-y-3">
+        {sortedViewings.map((viewing) => {
+          const isExpanded = expandedCards.has(viewing.id);
+          const isEditingPrice = editingCell?.viewingId === viewing.id && editingCell?.field === 'price';
+          const isEditingRent = editingCell?.viewingId === viewing.id && editingCell?.field === 'rent';
+          const price = toNumber(viewing.price);
+          const rent = toNumber(viewing.expectedMinimalRent);
+          const size = toNumber(viewing.size);
+          const bedrooms = toNumber(viewing.bedrooms);
+          const floor = toNumber(viewing.floor);
+          const extraTotal = expenseTotals[viewing.id] ?? 0;
+          const totalCost = calculateTotalCost(viewing, extraTotal);
+          const pricePerM = price !== null && size !== null && size > 0 ? price / size : null;
+
+          return (
+            <div
+              key={viewing.id}
+              className={`rounded-lg border ${
+                viewing.isArchive
+                  ? "border-orange-300 bg-orange-50/30 dark:border-orange-700 dark:bg-orange-900/10"
+                  : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
+              } shadow-sm transition-colors`}
+            >
+              {/* Card Header */}
+              <div className={`px-4 py-3 ${
+                viewing.isArchive
+                  ? "bg-orange-50/50 dark:bg-orange-900/20"
+                  : "bg-zinc-50 dark:bg-zinc-800/50"
+              }`}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    {viewing.isArchive && (
+                      <ArchiveIcon className="h-4 w-4 text-orange-500 dark:text-orange-400 flex-shrink-0" />
+                    )}
+                    <span className={`text-sm font-semibold text-zinc-900 dark:text-zinc-50 ${
+                      viewing.isArchive ? "line-through decoration-orange-400" : ""
+                    }`}>
+                      #{viewing.id}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      {viewing.linkAddress ? (
+                        <a
+                          href={viewing.linkAddress}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`text-sm font-medium truncate block hover:underline ${
+                            viewing.isArchive
+                              ? "text-blue-500 hover:text-blue-700 dark:text-blue-500 dark:hover:text-blue-400 line-through decoration-orange-400"
+                              : "text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                          }`}
+                          title={viewing.address || undefined}
+                        >
+                          {viewing.address}
+                        </a>
+                      ) : (
+                        <span
+                          className={`text-sm font-medium truncate block ${
+                            viewing.isArchive ? "line-through decoration-orange-400" : "text-zinc-900 dark:text-zinc-50"
+                          }`}
+                          title={viewing.address || undefined}
+                        >
+                          {viewing.address}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Key Metrics Row */}
+              <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
+                <div className="flex flex-wrap items-center gap-3 text-sm">
+                  {/* Price */}
+                  <div className="flex-1 min-w-[100px]">
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">Price</div>
+                    {isEditingPrice ? (
+                      <input
+                        type="number"
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        onBlur={() => {
+                          const value = parseFloat(editingValue.trim());
+                          if (!isNaN(value) && value >= 0) {
+                            handleCellEditSave(viewing.id, 'price');
+                          } else {
+                            handleCellEditCancel();
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const value = parseFloat(editingValue.trim());
+                            if (!isNaN(value) && value >= 0) {
+                              handleCellEditSave(viewing.id, 'price');
+                            }
+                          } else if (e.key === 'Escape') {
+                            handleCellEditCancel();
+                          }
+                        }}
+                        autoFocus
+                        className="w-full rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                        disabled={isSavingCell}
+                      />
+                    ) : (
+                      <button
+                        onClick={() => handleCellEditStart(viewing.id, 'price', price)}
+                        className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 hover:underline"
+                        title="Click to edit price"
+                      >
+                        {price !== null ? `€${price.toLocaleString()}` : "-"}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Size */}
+                  <div className="flex-1 min-w-[80px]">
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">Size</div>
+                    <div className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                      {size !== null ? `${size} m²` : "-"}
+                    </div>
+                  </div>
+
+                  {/* Floor */}
+                  <div className="flex-1 min-w-[80px]">
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">Floor</div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                        {floor !== null ? floor : "-"}
+                      </span>
+                      {viewing.isElevator ? (
+                        <span className="inline-flex items-center justify-center rounded-full bg-green-100 px-1 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300" title="Elevator available">
+                          <ElevatorDoorsIcon className="h-2.5 w-2.5" />
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center justify-center rounded-full bg-red-100 px-1 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-300" title="No elevator">
+                          <NoElevatorIcon className="h-2.5 w-2.5" />
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Price/m² */}
+                  <div className="flex-1 min-w-[80px]">
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">€/m²</div>
+                    <div className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                      {pricePerM !== null ? `€${Math.round(pricePerM).toLocaleString()}` : "-"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Visit Date/Time and Agent Row */}
+                <div className="mt-2 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+                  <div className="flex flex-wrap items-start gap-4">
+                    {/* Agent - Always Visible */}
+                    <div className="flex-1 min-w-[120px]">
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">Agent</div>
+                      <div className="text-sm text-zinc-900 dark:text-zinc-50">
+                        {viewing.agentStakeholder ? (
+                          <span title={viewing.agentStakeholder.name}>
+                            {viewing.agentStakeholder.name}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-300 dark:text-zinc-700">-</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Visit Date/Time */}
+                    {viewing.viewingDate && (
+                      <div className="flex-1 min-w-[120px]">
+                        <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">Visit Scheduled</div>
+                        <div className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                          {new Date(viewing.viewingDate).toLocaleString(undefined, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Actions Row */}
+              <div className="px-4 py-2 border-b border-zinc-200 dark:border-zinc-800">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    {/* Ad Link */}
+                    {viewing.linkAd && (
+                      <a
+                        href={viewing.linkAd}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center rounded-lg p-2 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-blue-600 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-blue-400"
+                        title="Open ad link"
+                      >
+                        <ExternalLinkIcon className="h-5 w-5" />
+                      </a>
+                    )}
+
+                    {/* Photos Link */}
+                    {viewing.linkToPhotos && (
+                      <a
+                        href={viewing.linkToPhotos}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center rounded-lg p-2 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-blue-600 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-blue-400"
+                        title="Open photos link"
+                      >
+                        <PhotoIcon className="h-5 w-5" />
+                      </a>
+                    )}
+
+                    {/* Visit Details */}
+                    <button
+                      onClick={() => handleVisitDetailsClick(viewing)}
+                      className="inline-flex items-center justify-center rounded-lg p-2 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                      title={`Visit details (${calculateCompletionPercentage(viewing)}% complete)`}
+                    >
+                      <ProgressClipboardIcon completionPercentage={calculateCompletionPercentage(viewing)} className="h-5 w-5" />
+                    </button>
+
+                    {/* Schedule Visit */}
+                    <button
+                      onClick={() => handleScheduleVisit(viewing)}
+                      className={`inline-flex items-center justify-center rounded-lg p-2 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 ${
+                        viewing.viewingDate
+                          ? "text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+                          : "text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                      }`}
+                      title={viewing.viewingDate ? "View/edit scheduled visit" : "Schedule visit"}
+                    >
+                      {viewing.viewingDate ? (
+                        <CalendarCheckIcon className="h-5 w-5" />
+                      ) : (
+                        <CalendarIcon className="h-5 w-5" />
+                      )}
+                    </button>
+
+                    {/* Comments */}
+                    {viewing.comments && viewing.comments.trim() && (
+                      <button
+                        onClick={() => handleViewComments(viewing.comments)}
+                        className="inline-flex items-center justify-center rounded-lg p-2 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                        title="View comments"
+                      >
+                        <DocumentIcon className="h-5 w-5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Menu Button */}
+                  <div className="menu-container relative">
+                    <button
+                      onClick={() => handleMenuToggle(viewing.id)}
+                      className="inline-flex items-center justify-center rounded-lg p-2 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                      title="Actions"
+                    >
+                      <MenuIcon className="h-5 w-5" />
+                    </button>
+
+                    {openMenuRowId === viewing.id && (
+                      <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+                        <div className="py-0.5">
+                          <button
+                            onClick={() => handleAdditionalDetailsClick(viewing)}
+                            className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                          >
+                            <PhotoIcon className="h-3.5 w-3.5" />
+                            <span>Additional Details</span>
+                          </button>
+                          <button
+                            onClick={() => handleExtraExpensesClick(viewing)}
+                            className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                          >
+                            <CurrencyDollarIcon className="h-3.5 w-3.5" />
+                            <span>Extra Expenses</span>
+                          </button>
+                          <button
+                            onClick={() => handleVisibilityClick(viewing)}
+                            className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                          >
+                            <UserIcon className="h-3.5 w-3.5" />
+                            <span>Manage Visibility</span>
+                          </button>
+                          <div className="my-0.5 border-t border-zinc-200 dark:border-zinc-700" />
+                          <button
+                            onClick={() => handleEditClick(viewing)}
+                            className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                          >
+                            <EditIcon className="h-3.5 w-3.5" />
+                            <span>Edit Basic Details</span>
+                          </button>
+                          <button
+                            onClick={() => handleArchiveClick(viewing)}
+                            className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-orange-600 transition-colors hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20 dark:hover:text-orange-300"
+                          >
+                            <ArchiveIcon className="h-3.5 w-3.5" />
+                            <span>{viewing.isArchive ? 'Unarchive' : 'Archive'}</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(viewing)}
+                            className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
+                          >
+                            <TrashIcon className="h-3.5 w-3.5" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Expandable Section Toggle */}
+              <button
+                onClick={() => handleCardToggle(viewing.id)}
+                className="w-full px-4 py-2 flex items-center justify-between text-sm text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800/50 transition-colors"
+              >
+                <span>More Details</span>
+                <ChevronDownIcon
+                  className={`h-4 w-4 transition-transform duration-200 ${
+                    isExpanded ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {/* Expandable Content */}
+              {isExpanded && (
+                <div className="px-4 py-3 border-t border-zinc-200 bg-zinc-50/50 dark:border-zinc-800 dark:bg-zinc-800/30 space-y-3">
+                  {/* Property Details */}
+                  <div>
+                    <h4 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-2 uppercase tracking-wide">
+                      Property Details
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-zinc-600 dark:text-zinc-400">Bedrooms</span>
+                        <span className="font-medium text-zinc-900 dark:text-zinc-50">
+                          {bedrooms !== null ? bedrooms : "-"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-zinc-600 dark:text-zinc-400">Rent</span>
+                        {isEditingRent ? (
+                          <input
+                            type="number"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            onBlur={() => {
+                              const value = parseFloat(editingValue.trim());
+                              if (!isNaN(value) && value >= 0) {
+                                handleCellEditSave(viewing.id, 'rent');
+                              } else {
+                                handleCellEditCancel();
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const value = parseFloat(editingValue.trim());
+                                if (!isNaN(value) && value >= 0) {
+                                  handleCellEditSave(viewing.id, 'rent');
+                                }
+                              } else if (e.key === 'Escape') {
+                                handleCellEditCancel();
+                              }
+                            }}
+                            autoFocus
+                            className="w-24 rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                            disabled={isSavingCell}
+                          />
+                        ) : (
+                          <button
+                            onClick={() => handleCellEditStart(viewing.id, 'rent', rent)}
+                            className="font-medium text-zinc-900 dark:text-zinc-50 hover:underline"
+                            title="Click to edit rent"
+                          >
+                            {rent !== null ? `€${rent.toLocaleString()}` : "-"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Financial Details */}
+                  <div>
+                    <h4 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-2 uppercase tracking-wide">
+                      Financial Details
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-zinc-600 dark:text-zinc-400">Extra Expenses</span>
+                        <button
+                          onClick={() => handleExtraExpensesClick(viewing)}
+                          className="font-medium text-zinc-900 dark:text-zinc-50 hover:underline"
+                        >
+                          {extraTotal !== 0 ? `€${Math.round(extraTotal).toLocaleString("en-US")}` : "€0"}
+                        </button>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-zinc-600 dark:text-zinc-400">Total Cost</span>
+                        <button
+                          onClick={() => handleTotalCostClick(viewing)}
+                          className="font-medium text-zinc-900 dark:text-zinc-50 hover:underline"
+                        >
+                          {totalCost > 0 ? `€${Math.round(totalCost).toLocaleString("en-US")}` : "-"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {editingViewing && (

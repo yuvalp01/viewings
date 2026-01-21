@@ -1,10 +1,14 @@
 import { HomeIcon, PlusIcon, CurrencyDollarIcon } from "@/app/components/icons";
 import Link from "next/link";
+import UserHeader from "@/app/components/UserHeader";
 
 export default async function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-50 via-white to-zinc-50 font-sans dark:from-black dark:via-zinc-950 dark:to-black">
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <div className="mb-6 md:mb-8 flex justify-end">
+          <UserHeader />
+        </div>
         {/* Hero Section */}
         <div className="mb-12 text-center sm:mb-16 lg:mb-20">
           <h1 className="mb-4 text-4xl font-bold tracking-tight text-black dark:text-zinc-50 sm:text-5xl lg:text-6xl">

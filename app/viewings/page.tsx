@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import Button from "@/app/components/Button";
 import { PlusIcon, HomeIcon, CalendarCheckIcon } from "@/app/components/icons";
+import UserHeader from "@/app/components/UserHeader";
 import RefreshButton from "./components/RefreshButton";
 import ScheduledVisitsFilter from "./components/ScheduledVisitsFilter";
 import ShowArchivedFilter from "./components/ShowArchivedFilter";
@@ -186,37 +187,50 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
 
   return (
     <div className="min-h-screen bg-zinc-50 font-sans dark:bg-black">
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
-              Viewings
-            </h1>
-            <p className="mt-2 text-lg text-zinc-600 dark:text-zinc-400">
-              {searchParams?.filter === "scheduled" 
-                ? "Showing scheduled visits (past week and future)"
-                : "View all viewing records"}
-            </p>
-          </div>
-          <div className="flex gap-4">
-            <Suspense fallback={<div className="w-12 h-12" />}>
-              <ScheduledVisitsFilter />
-            </Suspense>
-            <Suspense fallback={<div className="w-12 h-12" />}>
-              <ShowArchivedFilter />
-            </Suspense>
-            <RefreshButton />
-            <Button
-              href="/viewings/new"
-              icon={<PlusIcon className="h-5 w-5" />}
-              tooltip="Create a new viewing"
-            />
-            <Button
-              href="/"
-              variant="secondary"
-              icon={<HomeIcon className="h-5 w-5" />}
-              tooltip="Return to home page"
-            />
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        {/* Header Section */}
+        <div className="mb-6 md:mb-8">
+          <div className="mb-4 md:mb-0 md:flex md:items-center md:justify-between">
+            <div className="mb-4 md:mb-0">
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
+                Viewings
+              </h1>
+              <p className="mt-2 text-base sm:text-lg text-zinc-600 dark:text-zinc-400">
+                {searchParams?.filter === "scheduled" 
+                  ? "Showing scheduled visits (past week and future)"
+                  : "View all viewing records"}
+              </p>
+            </div>
+            
+            {/* Actions Section - Mobile: Grid, Desktop: Flex */}
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-3">
+              {/* Action Buttons Grid on Mobile */}
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:flex md:grid-cols-none md:gap-2">
+                <Suspense fallback={<div className="w-11 h-11 rounded-full" />}>
+                  <ScheduledVisitsFilter />
+                </Suspense>
+                <Suspense fallback={<div className="w-11 h-11 rounded-full" />}>
+                  <ShowArchivedFilter />
+                </Suspense>
+                <RefreshButton />
+                <Button
+                  href="/viewings/new"
+                  icon={<PlusIcon className="h-5 w-5" />}
+                  tooltip="Create a new viewing"
+                />
+                <Button
+                  href="/"
+                  variant="secondary"
+                  icon={<HomeIcon className="h-5 w-5" />}
+                  tooltip="Return to home page"
+                />
+              </div>
+              
+              {/* UserHeader */}
+              <div className="w-full sm:w-auto md:ml-2">
+                <UserHeader />
+              </div>
+            </div>
           </div>
         </div>
 

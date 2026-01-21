@@ -12,14 +12,14 @@ export default async function UserHeader() {
   const userEmail = session.user.email;
 
   return (
-    <div className="fixed top-4 right-4 z-50 flex items-center gap-3 rounded-lg border border-zinc-200 bg-white/90 backdrop-blur-sm px-4 py-2.5 shadow-lg dark:border-zinc-800 dark:bg-zinc-900/90">
-      <div className="flex flex-col items-end">
+    <div className="flex items-center gap-2 sm:gap-3 rounded-lg border border-zinc-200 bg-white px-3 py-2 sm:px-4 sm:py-2.5 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex flex-col items-end min-w-0">
         {session.user.name && (
-          <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          <div className="text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate max-w-[120px] sm:max-w-none">
             {session.user.name}
           </div>
         )}
-        <div className="text-xs text-zinc-600 dark:text-zinc-400">
+        <div className="text-[10px] sm:text-xs text-zinc-600 dark:text-zinc-400 truncate max-w-[120px] sm:max-w-none">
           {userEmail}
         </div>
       </div>
