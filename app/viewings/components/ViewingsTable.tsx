@@ -62,6 +62,7 @@ interface Viewing {
   linkToPhotos: string | null;
   metroStationDistanceLevel: number | null;
   transportation: string | null;
+  overallLevel: number | null;
   isArchive: boolean;
 }
 
@@ -88,6 +89,30 @@ function toNumber(value: number | null | undefined): number | null {
   return isNaN(num) ? null : num;
 }
 
+// Get border color classes based on overallLevel
+// 0-1: no color, 2: light green, 3: darker green
+function getOverallLevelBorderColor(overallLevel: number | null, isArchive: boolean): string {
+  // Archived items take precedence with orange border
+  if (isArchive) {
+    return "";
+  }
+  
+  if (overallLevel === null || overallLevel === undefined) {
+    return "";
+  }
+  
+  if (overallLevel === 2) {
+    return "border-l-2 border-l-green-300 dark:border-l-green-600";
+  }
+  
+  if (overallLevel === 3) {
+    return "border-l-2 border-l-green-500 dark:border-l-green-700";
+  }
+  
+  // 0 or 1: no color
+  return "";
+}
+
 // Calculate total cost for a viewing
 function calculateTotalCost(viewing: Viewing, extraItemsTotal: number): number {
   const price = viewing.price ?? 0;
@@ -110,7 +135,7 @@ function calculateTotalCost(viewing: Viewing, extraItemsTotal: number): number {
 // Calculate completion percentage for visit details
 // Matches the logic from VisitDetailsModal.tsx
 function calculateCompletionPercentage(viewing: Viewing): number {
-  const totalFields = 12;
+  const totalFields = 13;
   let filledFields = 0;
 
   // isSecurityDoor: only count if not null
@@ -131,6 +156,7 @@ function calculateCompletionPercentage(viewing: Viewing): number {
     "buildingMaintenanceLevel",
     "expectedMinimalRent",
     "comments",
+    "overallLevel",
   ];
 
   fieldsToCheck.forEach((field) => {
@@ -833,7 +859,7 @@ export default function ViewingsTable({
                   className={`group transition-colors ${
                     viewing.isArchive 
                       ? "opacity-75 bg-orange-50/30 dark:bg-orange-900/10 border-l-2 border-l-orange-400" 
-                      : ""
+                      : getOverallLevelBorderColor(viewing.overallLevel, viewing.isArchive)
                   } hover:bg-zinc-50 dark:hover:bg-zinc-800/50`}
                 >
                   <td className={`sticky left-0 z-10 w-10 whitespace-nowrap border-r border-zinc-200 px-1 py-2 text-xs font-medium text-zinc-900 transition-colors dark:border-zinc-700 dark:text-zinc-50 sm:px-1.5 ${
@@ -1239,8 +1265,8 @@ export default function ViewingsTable({
               key={viewing.id}
               className={`rounded-lg border ${
                 viewing.isArchive
-                  ? "border-orange-300 bg-orange-50/30 dark:border-orange-700 dark:bg-orange-900/10"
-                  : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
+                  ? "border-orange-300 bg-orange-50/30 dark:border-orange-700 dark:bg-orange-900/10 border-l-2 border-l-orange-400"
+                  : `border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 ${getOverallLevelBorderColor(viewing.overallLevel, viewing.isArchive)}`
               } shadow-sm transition-colors`}
             >
               {/* Card Header */}

@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Button from "@/app/components/Button";
 import { HomeIcon } from "@/app/components/icons";
-import UserHeader from "@/app/components/UserHeader";
 import ViewingExtrasTable from "./components/ViewingExtrasTable";
 
 export const dynamic = 'force-dynamic';
@@ -23,18 +22,13 @@ export default async function ViewingExtrasPage() {
             </div>
             
             {/* Actions Section */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
-              <div className="w-full sm:w-auto">
-                <Button
-                  href="/"
-                  variant="secondary"
-                  icon={<HomeIcon className="h-5 w-5" />}
-                  tooltip="Return to home page"
-                />
-              </div>
-              <div className="w-full sm:w-auto">
-                <UserHeader />
-              </div>
+            <div className="flex items-center gap-2">
+              <Button
+                href="/"
+                variant="secondary"
+                icon={<HomeIcon className="h-5 w-5" />}
+                tooltip="Return to home page"
+              />
             </div>
           </div>
         </div>

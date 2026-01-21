@@ -34,6 +34,7 @@ interface FormData {
   buildingMaintenanceLevel: string;
   comments: string;
   expectedMinimalRent: string;
+  overallLevel: string;
 }
 
 interface FormErrors {
@@ -76,11 +77,12 @@ export default function VisitDetailsModal({
     buildingMaintenanceLevel: "",
     comments: "",
     expectedMinimalRent: "",
+    overallLevel: "",
   });
 
   // Calculate completion percentage
   const completionPercentage = useMemo(() => {
-    const totalFields = 12;
+    const totalFields = 13;
     let filledFields = 0;
 
     // isSecurityDoor: only count if not null
@@ -101,6 +103,7 @@ export default function VisitDetailsModal({
       "buildingMaintenanceLevel",
       "comments",
       "expectedMinimalRent",
+      "overallLevel",
     ];
 
     stringFields.forEach((field) => {
@@ -168,7 +171,7 @@ export default function VisitDetailsModal({
         "renovationBathroomLevel",
         "renovationLevel",
       ],
-      comments: ["expectedMinimalRent", "comments"],
+      comments: ["expectedMinimalRent", "comments", "overallLevel"],
     };
 
     const result: Record<string, boolean> = {};
@@ -228,6 +231,9 @@ export default function VisitDetailsModal({
               expectedMinimalRent: details.expectedMinimalRent
                 ? details.expectedMinimalRent.toString()
                 : "",
+              overallLevel: details.overallLevel !== null && details.overallLevel !== undefined
+                ? details.overallLevel.toString()
+                : "",
             });
           } else {
             // Reset to empty form
@@ -244,6 +250,7 @@ export default function VisitDetailsModal({
               buildingMaintenanceLevel: "",
               comments: "",
               expectedMinimalRent: "",
+              overallLevel: "",
             });
           }
           setIsLoading(false);
@@ -351,6 +358,9 @@ export default function VisitDetailsModal({
           comments: formData.comments.trim() || null,
           expectedMinimalRent: formData.expectedMinimalRent.trim()
             ? parseFloat(formData.expectedMinimalRent)
+            : null,
+          overallLevel: formData.overallLevel !== ""
+            ? parseInt(formData.overallLevel)
             : null,
         }),
       });
@@ -878,6 +888,29 @@ export default function VisitDetailsModal({
                         className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm transition-colors text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder-zinc-500"
                         placeholder="Enter any additional comments or notes..."
                       />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="overallLevel"
+                        className="block text-sm font-medium text-zinc-900 dark:text-zinc-50 mb-2"
+                      >
+                        Overall Level
+                      </label>
+                      <select
+                        id="overallLevel"
+                        name="overallLevel"
+                        value={formData.overallLevel}
+                        onChange={handleChange}
+                        className={`w-full rounded-lg border border-zinc-300 px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 dark:border-zinc-700 dark:text-zinc-50 ${getQualityLevelBgColor(formData.overallLevel)}`}
+                      >
+                        <option value="">Select level...</option>
+                        {qualityLevels.map((level) => (
+                          <option key={level.id} value={level.id}>
+                            {level.name || `Level ${level.id}`}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 )}

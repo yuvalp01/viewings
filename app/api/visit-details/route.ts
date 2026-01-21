@@ -33,6 +33,7 @@ function validateVisitDetailsData(body: any): { error?: string } {
     "balconyLevel",
     "buildingLobbyLevel",
     "buildingMaintenanceLevel",
+    "overallLevel",
   ];
 
   for (const field of qualityLevelFields) {
@@ -102,6 +103,7 @@ export async function GET(request: NextRequest) {
         buildingMaintenanceLevel: true,
         comments: true,
         expectedMinimalRent: true,
+        overallLevel: true,
       },
     });
 
@@ -183,6 +185,7 @@ export async function PUT(request: NextRequest) {
       "balconyLevel",
       "buildingLobbyLevel",
       "buildingMaintenanceLevel",
+      "overallLevel",
     ];
 
     const qualityLevelIds = qualityLevelFields
@@ -232,6 +235,7 @@ export async function PUT(request: NextRequest) {
       buildingMaintenanceLevel: body.buildingMaintenanceLevel ?? null,
       comments: body.comments?.trim() || null,
       expectedMinimalRent: body.expectedMinimalRent ?? null,
+      overallLevel: body.overallLevel ?? null,
     };
 
     // Update viewing record with visit details
@@ -255,6 +259,7 @@ export async function PUT(request: NextRequest) {
         buildingMaintenanceLevel: true,
         comments: true,
         expectedMinimalRent: true,
+        overallLevel: true,
       },
     });
     // #region agent log

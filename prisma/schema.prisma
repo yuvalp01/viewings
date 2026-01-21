@@ -67,6 +67,7 @@ model Viewing {
   linkToPhotos                 String?  @map("LinkToPhotos") @db.NVarChar(500)
   metroStationDistanceLevel    Int?     @map("MetroStationDistanceLevel") @db.TinyInt
   transportation               String?  @map("Transportation") @db.NVarChar(Max)
+  overallLevel                 Int?     @map("OverallLevel") @db.TinyInt
 
   agentStakeholder    Stakeholder?         @relation("AgentStakeholder", fields: [agentStakeholderId], references: [id])
   viewedByStakeholder Stakeholder?         @relation("ViewedByStakeholder", fields: [viewedByStakeholderId], references: [id], onDelete: NoAction, onUpdate: NoAction)

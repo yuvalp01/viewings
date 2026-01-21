@@ -23,7 +23,7 @@ export default function Button({
   className = "",
 }: ButtonProps) {
   const baseClasses =
-    "inline-flex items-center justify-center rounded-full p-3 transition-colors disabled:cursor-not-allowed disabled:opacity-50 relative group";
+    "inline-flex items-center justify-center rounded-full p-2 sm:p-3 transition-colors disabled:cursor-not-allowed disabled:opacity-50 relative group";
   const variantClasses =
     variant === "primary"
       ? "bg-foreground text-background hover:bg-[#383838] dark:hover:bg-[#ccc]"

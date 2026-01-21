@@ -1,11 +1,7 @@
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import Button from "@/app/components/Button";
-import { PlusIcon, HomeIcon, CalendarCheckIcon } from "@/app/components/icons";
-import UserHeader from "@/app/components/UserHeader";
-import RefreshButton from "./components/RefreshButton";
-import ScheduledVisitsFilter from "./components/ScheduledVisitsFilter";
-import ShowArchivedFilter from "./components/ShowArchivedFilter";
+import { PlusIcon, CalendarCheckIcon } from "@/app/components/icons";
 import ViewingsTable from "./components/ViewingsTable";
 
 export const dynamic = 'force-dynamic';
@@ -18,13 +14,12 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
   // Handle both Promise and direct object for searchParams (Next.js compatibility)
   const searchParams = await Promise.resolve(props.searchParams);
   
-  // Calculate date threshold: 7 days ago from now
-  // Use local time to match user's timezone expectations
+  // Calculate today's date range (start and end of today)
   const now = new Date();
-  const sevenDaysAgo = new Date(now);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  // Set to start of day (midnight) for consistent comparison
-  sevenDaysAgo.setHours(0, 0, 0, 0);
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(now);
+  todayEnd.setHours(23, 59, 59, 999);
 
   // Build where clause based on filter
   const whereClause: any = {
@@ -37,11 +32,20 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
     whereClause.isArchive = false;
   }
 
-  // Apply filter if "scheduled" filter is active
-  if (searchParams?.filter === "scheduled") {
+  // Apply filter based on filter type
+  const filterType = searchParams?.filter;
+  if (filterType === "today") {
+    // Filter for viewings scheduled today (same day, any time)
     whereClause.viewingDate = {
       not: null,
-      gte: sevenDaysAgo,
+      gte: todayStart,
+      lte: todayEnd,
+    };
+  } else if (filterType === "scheduled") {
+    // Filter for scheduled viewings (has viewingDate and is in the future or today)
+    whereClause.viewingDate = {
+      not: null,
+      gte: todayStart,
     };
   }
 
@@ -181,6 +185,10 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
       buildingLobbyLevel: viewing.buildingLobbyLevel ?? null,
       buildingMaintenanceLevel: viewing.buildingMaintenanceLevel ?? null,
       expectedMinimalRent: viewing.expectedMinimalRent ? Number(viewing.expectedMinimalRent) : null,
+      linkToPhotos: viewing.linkToPhotos ?? null,
+      metroStationDistanceLevel: viewing.metroStationDistanceLevel ?? null,
+      transportation: viewing.transportation ?? null,
+      overallLevel: viewing.overallLevel ?? null,
       isArchive: viewing.isArchive ?? false,
     };
   });
@@ -188,52 +196,6 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
   return (
     <div className="min-h-screen bg-zinc-50 font-sans dark:bg-black">
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        {/* Header Section */}
-        <div className="mb-6 md:mb-8">
-          <div className="mb-4 md:mb-0 md:flex md:items-center md:justify-between">
-            <div className="mb-4 md:mb-0">
-              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
-                Viewings
-              </h1>
-              <p className="mt-2 text-base sm:text-lg text-zinc-600 dark:text-zinc-400">
-                {searchParams?.filter === "scheduled" 
-                  ? "Showing scheduled visits (past week and future)"
-                  : "View all viewing records"}
-              </p>
-            </div>
-            
-            {/* Actions Section - Mobile: Grid, Desktop: Flex */}
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-3">
-              {/* Action Buttons Grid on Mobile */}
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:flex md:grid-cols-none md:gap-2">
-                <Suspense fallback={<div className="w-11 h-11 rounded-full" />}>
-                  <ScheduledVisitsFilter />
-                </Suspense>
-                <Suspense fallback={<div className="w-11 h-11 rounded-full" />}>
-                  <ShowArchivedFilter />
-                </Suspense>
-                <RefreshButton />
-                <Button
-                  href="/viewings/new"
-                  icon={<PlusIcon className="h-5 w-5" />}
-                  tooltip="Create a new viewing"
-                />
-                <Button
-                  href="/"
-                  variant="secondary"
-                  icon={<HomeIcon className="h-5 w-5" />}
-                  tooltip="Return to home page"
-                />
-              </div>
-              
-              {/* UserHeader */}
-              <div className="w-full sm:w-auto md:ml-2">
-                <UserHeader />
-              </div>
-            </div>
-          </div>
-        </div>
-
         {viewings.length === 0 ? (
           <div className="rounded-lg border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
             <p className="text-lg text-zinc-600 dark:text-zinc-400">
@@ -255,7 +217,7 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
             Showing {viewings.length} viewing
             {viewings.length !== 1 ? "s" : ""}
           </span>
-          {searchParams?.filter === "scheduled" && (
+          {(filterType === "scheduled" || filterType === "today") && (
             <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300">
               <CalendarCheckIcon className="h-3 w-3" />
               Filtered
