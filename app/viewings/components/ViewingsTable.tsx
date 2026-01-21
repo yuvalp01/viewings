@@ -762,7 +762,7 @@ export default function ViewingsTable({
                 </SortableHeader>
                 <SortableHeader 
                   column="floor"
-                  className="hidden w-14 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 md:table-cell"
+                  className="w-14 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
                 >
                   Floor
                 </SortableHeader>
@@ -970,7 +970,7 @@ export default function ViewingsTable({
                       return bedrooms !== null ? bedrooms : "-";
                     })()}
                   </td>
-                  <td className="hidden whitespace-nowrap px-1 py-2 text-xs text-zinc-600 dark:text-zinc-400 md:table-cell">
+                  <td className="whitespace-nowrap px-1 py-2 text-xs text-zinc-600 dark:text-zinc-400">
                     <div className="flex items-center gap-0.5">
                       {(() => {
                         const floor = toNumber(viewing.floor);
