@@ -56,6 +56,7 @@ export default function TotalCostModal({
     const registrationFee = price * 0.0065;
     const findingTenant = rent;
     const ysFee = Math.max(price * 0.038, 3800) + 500;
+    const agentFee = Math.max(price * 0.0248, 2480);
 
     return [
       { label: "Purchase tax", amount: purchaseTax },
@@ -64,6 +65,7 @@ export default function TotalCostModal({
       { label: "Registration fee", amount: registrationFee },
       { label: "Finding tenant", amount: findingTenant },
       { label: "Y&S fee", amount: ysFee },
+      { label: "Agent fee", amount: agentFee },
     ];
   };
 

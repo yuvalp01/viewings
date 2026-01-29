@@ -148,8 +148,9 @@ function calculateTotalCost(viewing: Viewing, extraItemsTotal: number): number {
   const registrationFee = price * 0.0065;
   const findingTenant = rent;
   const ysFee = Math.max(price * 0.038, 3800) + 500;
+  const agentFee = Math.max(price * 0.0248, 2480);
   
-  const firstSubtotal = purchaseTax + lawyerFee + notaryFee + registrationFee + findingTenant + ysFee;
+  const firstSubtotal = purchaseTax + lawyerFee + notaryFee + registrationFee + findingTenant + ysFee + agentFee;
   const secondSubtotal = extraItemsTotal;
   const third = price;
   
