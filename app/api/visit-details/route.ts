@@ -221,22 +221,49 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Build update data object
-    const updateData: any = {
-      isSecurityDoor: body.isSecurityDoor !== undefined ? body.isSecurityDoor : null,
-      buildingSecurityDoorsPercent: body.buildingSecurityDoorsPercent ?? null,
-      aluminumWindowsLevel: body.aluminumWindowsLevel ?? null,
-      renovationKitchenLevel: body.renovationKitchenLevel ?? null,
-      renovationBathroomLevel: body.renovationBathroomLevel ?? null,
-      renovationLevel: body.renovationLevel ?? null,
-      viewLevel: body.viewLevel ?? null,
-      balconyLevel: body.balconyLevel ?? null,
-      buildingLobbyLevel: body.buildingLobbyLevel ?? null,
-      buildingMaintenanceLevel: body.buildingMaintenanceLevel ?? null,
-      comments: body.comments?.trim() || null,
-      expectedMinimalRent: body.expectedMinimalRent ?? null,
-      overallLevel: body.overallLevel ?? null,
-    };
+    // Build update data object - only include fields that are actually provided
+    const updateData: any = {};
+    
+    // Only add fields that are explicitly provided in the request body
+    if (body.isSecurityDoor !== undefined) {
+      updateData.isSecurityDoor = body.isSecurityDoor;
+    }
+    if (body.buildingSecurityDoorsPercent !== undefined) {
+      updateData.buildingSecurityDoorsPercent = body.buildingSecurityDoorsPercent;
+    }
+    if (body.aluminumWindowsLevel !== undefined) {
+      updateData.aluminumWindowsLevel = body.aluminumWindowsLevel;
+    }
+    if (body.renovationKitchenLevel !== undefined) {
+      updateData.renovationKitchenLevel = body.renovationKitchenLevel;
+    }
+    if (body.renovationBathroomLevel !== undefined) {
+      updateData.renovationBathroomLevel = body.renovationBathroomLevel;
+    }
+    if (body.renovationLevel !== undefined) {
+      updateData.renovationLevel = body.renovationLevel;
+    }
+    if (body.viewLevel !== undefined) {
+      updateData.viewLevel = body.viewLevel;
+    }
+    if (body.balconyLevel !== undefined) {
+      updateData.balconyLevel = body.balconyLevel;
+    }
+    if (body.buildingLobbyLevel !== undefined) {
+      updateData.buildingLobbyLevel = body.buildingLobbyLevel;
+    }
+    if (body.buildingMaintenanceLevel !== undefined) {
+      updateData.buildingMaintenanceLevel = body.buildingMaintenanceLevel;
+    }
+    if (body.comments !== undefined) {
+      updateData.comments = body.comments?.trim() || null;
+    }
+    if (body.expectedMinimalRent !== undefined) {
+      updateData.expectedMinimalRent = body.expectedMinimalRent;
+    }
+    if (body.overallLevel !== undefined) {
+      updateData.overallLevel = body.overallLevel;
+    }
 
     // Update viewing record with visit details
     // #region agent log
