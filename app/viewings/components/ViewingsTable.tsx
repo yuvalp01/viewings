@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { EditIcon, TrashIcon, ExternalLinkIcon, DocumentIcon, XIcon, UserIcon, CalendarIcon, CalendarCheckIcon, ClipboardIcon, ElevatorDoorsIcon, NoElevatorIcon, PhotoIcon, MenuIcon, CurrencyDollarIcon, ChevronUpIcon, ChevronDownIcon, ArchiveIcon } from "@/app/components/icons";
 import EditViewingModal from "./EditViewingModal";
@@ -326,6 +326,28 @@ export default function ViewingsTable({
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
 
+  // Extract fetchExpenseTotals as a reusable function
+  const fetchExpenseTotals = async (viewingsToFetch: Viewing[]) => {
+    const totals: Record<number, number> = {};
+    const promises = viewingsToFetch.map(async (viewing) => {
+      try {
+        const response = await fetch(`/api/viewing-extra-items?viewingId=${viewing.id}`);
+        const data = await response.json();
+        if (data.success && data.data) {
+          const total = data.data.reduce((sum: number, item: any) => sum + item.amount, 0);
+          totals[viewing.id] = total;
+        } else {
+          totals[viewing.id] = 0;
+        }
+      } catch (error) {
+        console.error(`Error fetching expenses for viewing ${viewing.id}:`, error);
+        totals[viewing.id] = 0;
+      }
+    });
+    await Promise.all(promises);
+    setExpenseTotals(totals);
+  };
+
   const handleEditClick = (viewing: Viewing) => {
     setEditingViewing(viewing);
     setOpenMenuRowId(null);
@@ -397,28 +419,8 @@ export default function ViewingsTable({
 
   const handleCloseExtraExpenses = () => {
     setExtraExpensesViewing(null);
-    // Refresh expense totals after modal closes
-    const fetchExpenseTotals = async () => {
-      const totals: Record<number, number> = {};
-      const promises = localViewings.map(async (viewing) => {
-        try {
-          const response = await fetch(`/api/viewing-extra-items?viewingId=${viewing.id}`);
-          const data = await response.json();
-          if (data.success && data.data) {
-            const total = data.data.reduce((sum: number, item: any) => sum + item.amount, 0);
-            totals[viewing.id] = total;
-          } else {
-            totals[viewing.id] = 0;
-          }
-        } catch (error) {
-          console.error(`Error fetching expenses for viewing ${viewing.id}:`, error);
-          totals[viewing.id] = 0;
-        }
-      });
-      await Promise.all(promises);
-      setExpenseTotals(totals);
-    };
-    fetchExpenseTotals();
+    // Refresh expense totals after modal closes (expenses might have changed)
+    fetchExpenseTotals(localViewings);
   };
 
   const handleVisibilityClick = (viewing: Viewing) => {
@@ -534,33 +536,14 @@ export default function ViewingsTable({
     }
   };
 
-  // Fetch expense totals for all viewings
+  // Fetch expense totals only on initial mount (not on every localViewings change)
+  const hasFetchedInitial = useRef(false);
   useEffect(() => {
-    const fetchExpenseTotals = async () => {
-      const totals: Record<number, number> = {};
-      const promises = localViewings.map(async (viewing) => {
-        try {
-          const response = await fetch(`/api/viewing-extra-items?viewingId=${viewing.id}`);
-          const data = await response.json();
-          if (data.success && data.data) {
-            const total = data.data.reduce((sum: number, item: any) => sum + item.amount, 0);
-            totals[viewing.id] = total;
-          } else {
-            totals[viewing.id] = 0;
-          }
-        } catch (error) {
-          console.error(`Error fetching expenses for viewing ${viewing.id}:`, error);
-          totals[viewing.id] = 0;
-        }
-      });
-      await Promise.all(promises);
-      setExpenseTotals(totals);
-    };
-
-    if (localViewings.length > 0) {
-      fetchExpenseTotals();
+    if (viewings.length > 0 && !hasFetchedInitial.current) {
+      hasFetchedInitial.current = true;
+      fetchExpenseTotals(viewings);
     }
-  }, [localViewings]);
+  }, [viewings]);
 
   // Sync localViewings with viewings prop when it changes (e.g., from router.refresh())
   useEffect(() => {
