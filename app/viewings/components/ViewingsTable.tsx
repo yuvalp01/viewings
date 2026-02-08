@@ -321,6 +321,7 @@ export default function ViewingsTable({
   const [expenseTotals, setExpenseTotals] = useState<Record<number, number>>({});
   const [editingCell, setEditingCell] = useState<{ viewingId: number; field: 'price' | 'rent' } | null>(null);
   const [editingValue, setEditingValue] = useState<string>("");
+  const [originalValue, setOriginalValue] = useState<number | null>(null);
   const [isSavingCell, setIsSavingCell] = useState(false);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -460,17 +461,27 @@ export default function ViewingsTable({
   const handleCellEditStart = (viewingId: number, field: 'price' | 'rent', currentValue: number | null) => {
     setEditingCell({ viewingId, field });
     setEditingValue(currentValue !== null ? currentValue.toString() : "");
+    setOriginalValue(currentValue);
   };
 
   const handleCellEditCancel = () => {
     setEditingCell(null);
     setEditingValue("");
+    setOriginalValue(null);
   };
 
   const handleCellEditSave = async (viewingId: number, field: 'price' | 'rent') => {
     const value = parseFloat(editingValue.trim());
     if (isNaN(value) || value < 0) {
+      handleCellEditCancel();
       return; // Invalid value, don't save
+    }
+
+    // Check if value actually changed
+    if (originalValue !== null && value === originalValue) {
+      // Value hasn't changed, just cancel editing without API call
+      handleCellEditCancel();
+      return;
     }
 
     setIsSavingCell(true);
@@ -533,6 +544,7 @@ export default function ViewingsTable({
       setIsSavingCell(false);
       setEditingCell(null);
       setEditingValue("");
+      setOriginalValue(null);
     }
   };
 
