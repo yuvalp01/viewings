@@ -11,8 +11,8 @@ VALUES
     (1, N'Good opportunity'),
     (2, N'Good but expensive'),
     (3, N'Possible for low price'),
-    (4, N'Offer given');
-    (5, N'No way'),
+    (4, N'Offer given',
+    (5, N'Not good'),
     (6, N'Bought by us'),
     (7, N'Bought by others');
 GO

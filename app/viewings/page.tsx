@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Button from "@/app/components/Button";
-import { PlusIcon, CalendarCheckIcon } from "@/app/components/icons";
+import { PlusIcon, CalendarCheckIcon, XIcon } from "@/app/components/icons";
 import ViewingsTable from "./components/ViewingsTable";
 import ViewingsFilterPanel from "./components/ViewingsFilterPanel";
 
@@ -307,11 +307,10 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
                 <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
                   <Button
                     href="/viewings"
+                    icon={<XIcon className="h-5 w-5" />}
                     tooltip="Clear all filters"
                     className="sm:w-auto"
-                  >
-                    Clear filters
-                  </Button>
+                  />
                 </div>
                 <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-500">
                   You can also adjust the filters in the panel above.

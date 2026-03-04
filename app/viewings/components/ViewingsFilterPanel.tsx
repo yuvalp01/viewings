@@ -362,14 +362,12 @@ export default function ViewingsFilterPanel({ outcomeStatuses }: ViewingsFilterP
                         type="button"
                         onClick={() => handleOutcomeStatusToggle(status.id)}
                         aria-pressed={isSelected}
-                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] sm:text-xs transition-colors cursor-pointer ${
-                          getOutcomeStatusClasses(isSelected ? status.id : null)
-                        } ${
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] sm:text-xs transition-colors cursor-pointer ${getOutcomeStatusClasses(
+                          status.id
+                        )} ${
                           isSelected
-                            ? "ring-1 ring-offset-0 ring-blue-400 dark:ring-blue-500"
-                            : hasOutcomeStatusFilter
-                            ? "opacity-70 hover:opacity-100"
-                            : ""
+                            ? "opacity-100 ring-1 ring-offset-0 ring-blue-400 dark:ring-blue-500"
+                            : "opacity-70 hover:opacity-100"
                         }`}
                       >
                         <span className="truncate max-w-[120px] sm:max-w-[160px]">{status.name}</span>

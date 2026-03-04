@@ -163,6 +163,20 @@ function calculateTotalCost(viewing: Viewing, extraItemsTotal: number): number {
   return firstSubtotal + secondSubtotal + third;
 }
 
+// Price + extra only (no fees)
+function calculatePriceExtra(viewing: Viewing, extraItemsTotal: number): number {
+  const price = viewing.price ?? 0;
+  return price + extraItemsTotal;
+}
+
+// Price Extra per m² (price + extra) / size
+function calculatePriceExtraPerSqm(viewing: Viewing, extraItemsTotal: number): number | null {
+  const size = viewing.size ?? 0;
+  if (size <= 0) return null;
+  const priceExtra = calculatePriceExtra(viewing, extraItemsTotal);
+  return priceExtra / size;
+}
+
 // Calculate completion percentage for visit details
 // Matches the logic from VisitDetailsModal.tsx
 function calculateCompletionPercentage(viewing: Viewing): number {
@@ -672,6 +686,14 @@ export default function ViewingsTable({
         aValue = expenseTotals[a.id] ?? 0;
         bValue = expenseTotals[b.id] ?? 0;
         break;
+      case 'priceExtra':
+        aValue = calculatePriceExtra(a, expenseTotals[a.id] ?? 0);
+        bValue = calculatePriceExtra(b, expenseTotals[b.id] ?? 0);
+        break;
+      case 'eurPerSqmEx':
+        aValue = calculatePriceExtraPerSqm(a, expenseTotals[a.id] ?? 0);
+        bValue = calculatePriceExtraPerSqm(b, expenseTotals[b.id] ?? 0);
+        break;
       case 'totalCost':
         const aExtraTotal = expenseTotals[a.id] ?? 0;
         const bExtraTotal = expenseTotals[b.id] ?? 0;
@@ -887,6 +909,18 @@ export default function ViewingsTable({
                   className="w-20 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
                 >
                   Extra
+                </SortableHeader>
+                <SortableHeader 
+                  column="priceExtra"
+                  className="w-24 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
+                >
+                  Price Extra
+                </SortableHeader>
+                <SortableHeader 
+                  column="eurPerSqmEx"
+                  className="w-20 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
+                >
+                  €/m²Ex
                 </SortableHeader>
                 <SortableHeader 
                   column="totalCost"
@@ -1165,6 +1199,20 @@ export default function ViewingsTable({
                           {total !== 0 ? `€${Math.round(total).toLocaleString("en-US")}` : "€0"}
                         </button>
                       );
+                    })()}
+                  </td>
+                  <td className="whitespace-nowrap px-1 py-2 text-xs font-medium text-zinc-900 dark:text-zinc-50">
+                    {(() => {
+                      const extraTotal = expenseTotals[viewing.id] ?? 0;
+                      const priceExtra = calculatePriceExtra(viewing, extraTotal);
+                      return priceExtra > 0 ? `€${Math.round(priceExtra).toLocaleString("en-US")}` : "-";
+                    })()}
+                  </td>
+                  <td className="whitespace-nowrap px-1 py-2 text-xs font-medium text-zinc-900 dark:text-zinc-50">
+                    {(() => {
+                      const extraTotal = expenseTotals[viewing.id] ?? 0;
+                      const eurPerSqmEx = calculatePriceExtraPerSqm(viewing, extraTotal);
+                      return eurPerSqmEx !== null ? `€${Math.round(eurPerSqmEx).toLocaleString("en-US")}` : "-";
                     })()}
                   </td>
                   <td className="whitespace-nowrap px-1 py-2 text-xs font-medium text-zinc-900 dark:text-zinc-50">
@@ -1744,6 +1792,24 @@ export default function ViewingsTable({
                         >
                           {extraTotal !== 0 ? `€${Math.round(extraTotal).toLocaleString("en-US")}` : "€0"}
                         </button>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-zinc-600 dark:text-zinc-400">Price Extra</span>
+                        <span className="font-medium text-zinc-900 dark:text-zinc-50">
+                          {(() => {
+                            const priceExtra = calculatePriceExtra(viewing, extraTotal);
+                            return priceExtra > 0 ? `€${Math.round(priceExtra).toLocaleString("en-US")}` : "-";
+                          })()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-zinc-600 dark:text-zinc-400">€/m²Ex</span>
+                        <span className="font-medium text-zinc-900 dark:text-zinc-50">
+                          {(() => {
+                            const eurPerSqmEx = calculatePriceExtraPerSqm(viewing, extraTotal);
+                            return eurPerSqmEx !== null ? `€${Math.round(eurPerSqmEx).toLocaleString("en-US")}` : "-";
+                          })()}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-zinc-600 dark:text-zinc-400">Total Cost</span>
