@@ -1,6 +1,6 @@
 /**
  * Column configuration for the viewings table.
- * Used for show/hide and reorder; persisted in sessionStorage.
+ * Used for show/hide and reorder; persisted in localStorage (survives browser close).
  */
 
 export interface ColumnConfigItem {
@@ -40,7 +40,7 @@ export const MENU_COLUMN_ID = "menu";
 export function loadColumnConfig(): ColumnConfigItem[] {
   if (typeof window === "undefined") return DEFAULT_COLUMNS;
   try {
-    const raw = sessionStorage.getItem(VIEWINGS_TABLE_COLUMNS_KEY);
+    const raw = localStorage.getItem(VIEWINGS_TABLE_COLUMNS_KEY);
     if (!raw) return DEFAULT_COLUMNS;
     const parsed = JSON.parse(raw) as { columns?: ColumnConfigItem[] };
     if (!Array.isArray(parsed?.columns) || parsed.columns.length === 0) {
@@ -60,7 +60,7 @@ export function loadColumnConfig(): ColumnConfigItem[] {
 export function saveColumnConfig(columns: ColumnConfigItem[]): void {
   if (typeof window === "undefined") return;
   try {
-    sessionStorage.setItem(
+    localStorage.setItem(
       VIEWINGS_TABLE_COLUMNS_KEY,
       JSON.stringify({ columns })
     );
