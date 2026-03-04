@@ -1,13 +1,31 @@
-import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import Button from "@/app/components/Button";
 import { PlusIcon, CalendarCheckIcon } from "@/app/components/icons";
 import ViewingsTable from "./components/ViewingsTable";
+import ViewingsFilterPanel from "./components/ViewingsFilterPanel";
 
 export const dynamic = 'force-dynamic';
 
 interface ViewingsPageProps {
-  searchParams: Promise<{ filter?: string; showArchived?: string }> | { filter?: string; showArchived?: string };
+  searchParams:
+    | Promise<{
+        filter?: string;
+        showArchived?: string;
+        outcomeStatusIds?: string;
+        priceMin?: string;
+        priceMax?: string;
+        sizeMin?: string;
+        sizeMax?: string;
+      }>
+    | {
+        filter?: string;
+        showArchived?: string;
+        outcomeStatusIds?: string;
+        priceMin?: string;
+        priceMax?: string;
+        sizeMin?: string;
+        sizeMax?: string;
+      };
 }
 
 export default async function ViewingsPage(props: ViewingsPageProps) {
@@ -30,6 +48,62 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
   const showArchived = searchParams?.showArchived === "true";
   if (!showArchived) {
     whereClause.isArchive = false;
+  }
+
+  // Apply price range filter
+  const priceMinRaw = searchParams?.priceMin;
+  const priceMaxRaw = searchParams?.priceMax;
+  const priceMin = priceMinRaw !== undefined ? Number(priceMinRaw) : undefined;
+  const priceMax = priceMaxRaw !== undefined ? Number(priceMaxRaw) : undefined;
+
+  if (!Number.isNaN(priceMin) && priceMin !== undefined) {
+    whereClause.price = whereClause.price ?? {};
+    whereClause.price.gte = priceMin;
+  }
+  if (!Number.isNaN(priceMax) && priceMax !== undefined) {
+    whereClause.price = whereClause.price ?? {};
+    whereClause.price.lte = priceMax;
+  }
+
+  // Apply size range filter
+  const sizeMinRaw = searchParams?.sizeMin;
+  const sizeMaxRaw = searchParams?.sizeMax;
+  const sizeMin = sizeMinRaw !== undefined ? Number(sizeMinRaw) : undefined;
+  const sizeMax = sizeMaxRaw !== undefined ? Number(sizeMaxRaw) : undefined;
+
+  if (!Number.isNaN(sizeMin) && sizeMin !== undefined) {
+    whereClause.size = whereClause.size ?? {};
+    whereClause.size.gte = sizeMin;
+  }
+  if (!Number.isNaN(sizeMax) && sizeMax !== undefined) {
+    whereClause.size = whereClause.size ?? {};
+    whereClause.size.lte = sizeMax;
+  }
+
+  // Apply outcome status filter (multi-select via comma-separated ids in outcomeStatusIds)
+  const outcomeStatusIdsParam = searchParams?.outcomeStatusIds;
+  let outcomeStatusFilterIds: number[] | null = null;
+
+  if (outcomeStatusIdsParam === "none") {
+    // User explicitly chose "no outcome filter" (e.g. via Clear all)
+    outcomeStatusFilterIds = null;
+  } else if (outcomeStatusIdsParam && outcomeStatusIdsParam.trim() !== "") {
+    // Explicit selection from URL
+    const parsed = outcomeStatusIdsParam
+      .split(",")
+      .map((value) => parseInt(value.trim(), 10))
+      .filter((value) => !Number.isNaN(value));
+
+    outcomeStatusFilterIds = parsed.length > 0 ? parsed : null;
+  } else {
+    // No explicit param → apply default 1–4
+    outcomeStatusFilterIds = [1, 2, 3, 4];
+  }
+
+  if (outcomeStatusFilterIds && outcomeStatusFilterIds.length > 0) {
+    whereClause.outcomeStatusId = {
+      in: outcomeStatusFilterIds,
+    };
   }
 
   // Apply filter based on filter type
@@ -56,6 +130,12 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
     },
     include: {
       agentStakeholder: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      outcomeStatus: {
         select: {
           id: true,
           name: true,
@@ -137,6 +217,16 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
     },
   });
 
+  const outcomeStatuses = await prisma.viewingOutcomeStatus.findMany({
+    orderBy: {
+      id: "asc",
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
   // Serialize Decimal values to numbers for client component
   // Prisma Decimal objects cannot be passed to Client Components
   const extras = extrasRaw.map((extra: any) => ({
@@ -193,23 +283,64 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
     };
   });
 
+  const hasOutcomeStatusFilter =
+    outcomeStatusFilterIds !== null && outcomeStatusFilterIds.length > 0;
+  const hasPriceFilter = priceMinRaw !== undefined || priceMaxRaw !== undefined;
+  const hasSizeFilter = sizeMinRaw !== undefined || sizeMaxRaw !== undefined;
+  const hasQuickFilter = filterType === "today" || filterType === "scheduled";
+  const hasArchiveFilter = showArchived;
+  const hasAnyFilter =
+    hasQuickFilter || hasArchiveFilter || hasOutcomeStatusFilter || hasPriceFilter || hasSizeFilter;
+
   return (
     <div className="min-h-screen bg-zinc-50 font-sans dark:bg-black">
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <ViewingsFilterPanel outcomeStatuses={outcomeStatuses} />
+
         {viewings.length === 0 ? (
           <div className="rounded-lg border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
-            <p className="text-lg text-zinc-600 dark:text-zinc-400">
-              No viewings found.
-            </p>
-            <Button
-              href="/viewings/new"
-              icon={<PlusIcon className="h-5 w-5" />}
-              tooltip="Create your first viewing"
-              className="mt-4"
-            />
+            {hasAnyFilter ? (
+              <>
+                <p className="text-lg text-zinc-600 dark:text-zinc-400">
+                  No viewings match the current filters.
+                </p>
+                <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+                  <Button
+                    href="/viewings"
+                    tooltip="Clear all filters"
+                    className="sm:w-auto"
+                  >
+                    Clear filters
+                  </Button>
+                </div>
+                <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-500">
+                  You can also adjust the filters in the panel above.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-lg text-zinc-600 dark:text-zinc-400">
+                  No viewings found.
+                </p>
+                <Button
+                  href="/viewings/new"
+                  icon={<PlusIcon className="h-5 w-5" />}
+                  tooltip="Create your first viewing"
+                  className="mt-4"
+                />
+              </>
+            )}
           </div>
         ) : (
-          <ViewingsTable viewings={serializedViewings} stakeholders={stakeholders} allStakeholders={allStakeholders} scheduleStakeholders={scheduleStakeholders} qualityLevels={qualityLevels} extras={extras} />
+          <ViewingsTable
+            viewings={serializedViewings}
+            stakeholders={stakeholders}
+            allStakeholders={allStakeholders}
+            scheduleStakeholders={scheduleStakeholders}
+            qualityLevels={qualityLevels}
+            extras={extras}
+            outcomeStatuses={outcomeStatuses}
+          />
         )}
 
         <div className="mt-4 flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">

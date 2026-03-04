@@ -51,6 +51,7 @@ model Viewing {
   viewedByStakeholderId Int?      @map("ViewedByStakeholderId")
   isDeleted             Boolean   @default(false) @map("IsDeleted")
   isArchive             Boolean   @default(false) @map("IsArchive")
+  outcomeStatusId       Int?      @map("OutcomeStatusId")
 
   // Visit details fields
   isSecurityDoor               Boolean? @map("IsSecurityDoor")
@@ -71,10 +72,21 @@ model Viewing {
 
   agentStakeholder    Stakeholder?         @relation("AgentStakeholder", fields: [agentStakeholderId], references: [id])
   viewedByStakeholder Stakeholder?         @relation("ViewedByStakeholder", fields: [viewedByStakeholderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  outcomeStatus       ViewingOutcomeStatus? @relation(fields: [outcomeStatusId], references: [id], map: "FK_Viewings_OutcomeStatus")
   viewingExtraItems   ViewingExtraItem[]
   viewingsVisibility  ViewingsVisibility[]
 
   @@map("viewings")
+  @@schema("dbo")
+}
+
+model ViewingOutcomeStatus {
+  id   Int    @id @map("Id")
+  name String @map("Name") @db.NVarChar(50)
+
+  viewings Viewing[]
+
+  @@map("lkp_viewingOutcomeStatus")
   @@schema("dbo")
 }
 

@@ -364,6 +364,30 @@ export async function PUT(request: NextRequest) {
       updateData.viewedByStakeholderId = body.viewedByStakeholderId ?? null;
     }
 
+    // Validate outcomeStatusId if provided
+    if (body.outcomeStatusId !== undefined) {
+      if (body.outcomeStatusId !== null) {
+        if (typeof body.outcomeStatusId !== "number") {
+          return NextResponse.json(
+            { error: "Outcome status ID must be a number" },
+            { status: 400 }
+          );
+        }
+
+        const outcomeStatus = await prisma.viewingOutcomeStatus.findUnique({
+          where: { id: body.outcomeStatusId },
+        });
+
+        if (!outcomeStatus) {
+          return NextResponse.json(
+            { error: "Invalid outcome status" },
+            { status: 400 }
+          );
+        }
+      }
+      updateData.outcomeStatusId = body.outcomeStatusId ?? null;
+    }
+
     // Update viewing record
     const viewing = await prisma.viewing.update({
       where: { id: body.id },

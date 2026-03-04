@@ -12,6 +12,7 @@ import AdditionalDetailsModal from "./AdditionalDetailsModal";
 import ExtraExpensesModal from "./ExtraExpensesModal";
 import VisibilityModal from "./VisibilityModal";
 import TotalCostModal from "./TotalCostModal";
+import { getOutcomeStatusClasses } from "./outcomeStatusStyles";
 
 interface Stakeholder {
   id: number;
@@ -64,6 +65,10 @@ interface Viewing {
   transportation: string | null;
   overallLevel: number | null;
   isArchive: boolean;
+  outcomeStatus?: {
+    id: number;
+    name: string;
+  } | null;
 }
 
 interface ViewingsTableProps {
@@ -73,6 +78,7 @@ interface ViewingsTableProps {
   scheduleStakeholders: Stakeholder[];
   qualityLevels: QualityLevel[];
   extras: ViewingExtra[];
+  outcomeStatuses: { id: number; name: string }[];
 }
 
 // Helper function to safely convert to number
@@ -299,6 +305,7 @@ export default function ViewingsTable({
   scheduleStakeholders,
   qualityLevels,
   extras,
+  outcomeStatuses,
 }: ViewingsTableProps) {
   const router = useRouter();
   const [editingViewing, setEditingViewing] = useState<Viewing | null>(null);
@@ -556,6 +563,49 @@ export default function ViewingsTable({
       fetchExpenseTotals(viewings);
     }
   }, [viewings]);
+
+  const handleOutcomeStatusChange = async (viewing: Viewing, outcomeStatusId: number | null) => {
+    try {
+      const response = await fetch("/api/viewings", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: viewing.id,
+          outcomeStatusId,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update outcome status");
+      }
+
+      const selectedStatus =
+        outcomeStatusId !== null
+          ? outcomeStatuses.find((status) => status.id === outcomeStatusId) ?? null
+          : null;
+
+      setLocalViewings((prev) =>
+        prev.map((v) =>
+          v.id === viewing.id
+            ? {
+                ...v,
+                outcomeStatus: selectedStatus
+                  ? { id: selectedStatus.id, name: selectedStatus.name }
+                  : null,
+              }
+            : v
+        )
+      );
+
+      router.refresh();
+    } catch (error) {
+      console.error("Error updating outcome status:", error);
+      alert(error instanceof Error ? error.message : "Failed to update outcome status");
+    }
+  };
 
   // Sync localViewings with viewings prop when it changes (e.g., from router.refresh())
   useEffect(() => {
@@ -850,6 +900,9 @@ export default function ViewingsTable({
                 >
                   Agent
                 </SortableHeader>
+                <th className="w-28 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
+                  Outcome
+                </th>
                 <th className="w-8 px-0.5 py-2 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
                    
                 </th>
@@ -1139,6 +1192,31 @@ export default function ViewingsTable({
                       </span>
                     ) : (
                       <span className="text-zinc-300 dark:text-zinc-700">-</span>
+                    )}
+                  </td>
+                  <td className="whitespace-nowrap px-1 py-2 text-xs text-zinc-600 dark:text-zinc-400">
+                    {outcomeStatuses.length === 0 ? (
+                      <span className="text-zinc-300 dark:text-zinc-700">-</span>
+                    ) : (
+                      <select
+                        value={viewing.outcomeStatus?.id ?? ""}
+                        onChange={(e) =>
+                          handleOutcomeStatusChange(
+                            viewing,
+                            e.target.value === "" ? null : Number(e.target.value)
+                          )
+                        }
+                        className={`max-w-[8rem] cursor-pointer truncate rounded-full border px-2 py-0.5 text-xs font-medium outline-none transition-colors ${getOutcomeStatusClasses(
+                          viewing.outcomeStatus?.id ?? null
+                        )}`}
+                      >
+                        <option value="">No outcome</option>
+                        {outcomeStatuses.map((status) => (
+                          <option key={status.id} value={status.id}>
+                            {status.name}
+                          </option>
+                        ))}
+                      </select>
                     )}
                   </td>
                   <td className="whitespace-nowrap px-0.5 py-2 text-center text-xs">

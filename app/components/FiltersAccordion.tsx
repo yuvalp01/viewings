@@ -15,6 +15,8 @@ export default function FiltersAccordion() {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [outcomeStatuses, setOutcomeStatuses] = useState<{ id: number; name: string }[]>([]);
+  const [isLoadingOutcomeStatuses, setIsLoadingOutcomeStatuses] = useState(false);
 
   // Only show on viewings page
   if (pathname !== "/viewings") {
@@ -24,7 +26,8 @@ export default function FiltersAccordion() {
   const todayActive = searchParams.get("filter") === "today";
   const scheduledActive = searchParams.get("filter") === "scheduled";
   const archiveActive = searchParams.get("showArchived") === "true";
-  const hasActiveFilters = todayActive || scheduledActive || archiveActive;
+  const hasOutcomeStatusFilter = !!searchParams.get("outcomeStatusIds");
+  const hasActiveFilters = todayActive || scheduledActive || archiveActive || hasOutcomeStatusFilter;
 
   const handleTodayToggle = () => {
     const params = new URLSearchParams(searchParams.toString());
@@ -85,6 +88,32 @@ export default function FiltersAccordion() {
     });
   };
 
+  const handleOutcomeStatusChange = (id: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const raw = params.get("outcomeStatusIds") ?? "";
+    const currentIds = raw
+      .split(",")
+      .map((value) => parseInt(value.trim(), 10))
+      .filter((value) => !Number.isNaN(value));
+
+    const exists = currentIds.includes(id);
+    const nextIds = exists
+      ? currentIds.filter((value) => value !== id)
+      : [...currentIds, id];
+
+    if (nextIds.length === 0) {
+      params.delete("outcomeStatusIds");
+    } else {
+      params.set("outcomeStatusIds", nextIds.join(","));
+    }
+
+    startTransition(() => {
+      const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+      router.replace(newUrl);
+      router.refresh();
+    });
+  };
+
   // Calculate dropdown position when opening
   useEffect(() => {
     if (isOpen && buttonRef.current) {
@@ -118,6 +147,39 @@ export default function FiltersAccordion() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
+
+  // Load outcome statuses when the dropdown first opens
+  useEffect(() => {
+    if (!isOpen || isLoadingOutcomeStatuses || outcomeStatuses.length > 0) {
+      return;
+    }
+
+    const loadStatuses = async () => {
+      try {
+        setIsLoadingOutcomeStatuses(true);
+        const response = await fetch("/api/viewing-outcome-statuses");
+        if (!response.ok) {
+          throw new Error("Failed to load outcome statuses");
+        }
+        const json = await response.json();
+        if (json.success && Array.isArray(json.data)) {
+          setOutcomeStatuses(
+            json.data.map((status: { id: number; name: string }) => ({
+              id: status.id,
+              name: status.name,
+            }))
+          );
+        }
+      } catch (error) {
+        // Log for debugging; keep UI graceful
+        console.error(error);
+      } finally {
+        setIsLoadingOutcomeStatuses(false);
+      }
+    };
+
+    loadStatuses();
+  }, [isOpen, isLoadingOutcomeStatuses, outcomeStatuses.length]);
 
   return (
     <div className="relative w-auto">
@@ -227,6 +289,43 @@ export default function FiltersAccordion() {
                 </span>
               )}
             </div>
+
+            {outcomeStatuses.length > 0 && (
+              <div className="mt-1.5 w-full sm:w-auto border-t border-zinc-200 pt-1.5 dark:border-zinc-700">
+                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                  Outcome status
+                </div>
+                <div className="flex flex-col gap-1">
+                  {outcomeStatuses.map((status) => {
+                    const params = new URLSearchParams(searchParams.toString());
+                    const raw = params.get("outcomeStatusIds") ?? "";
+                    const currentIds = raw
+                      .split(",")
+                      .map((value) => parseInt(value.trim(), 10))
+                      .filter((value) => !Number.isNaN(value));
+                    const selected = currentIds.includes(status.id);
+
+                    return (
+                      <button
+                        key={status.id}
+                        type="button"
+                        onClick={() => handleOutcomeStatusChange(status.id)}
+                        className={`flex w-full items-center justify-between rounded-md px-2 py-1 text-[11px] sm:text-xs transition-colors ${
+                          selected
+                            ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                            : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                        }`}
+                      >
+                        <span className="truncate">{status.name}</span>
+                        {selected && (
+                          <span className="ml-2 h-1.5 w-1.5 rounded-full bg-blue-500 dark:bg-blue-400" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
