@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { EditIcon, TrashIcon, ExternalLinkIcon, DocumentIcon, XIcon, UserIcon, CalendarIcon, CalendarCheckIcon, ClipboardIcon, ElevatorDoorsIcon, NoElevatorIcon, PhotoIcon, MenuIcon, CurrencyDollarIcon, ChevronUpIcon, ChevronDownIcon, ArchiveIcon } from "@/app/components/icons";
+import { EditIcon, TrashIcon, ExternalLinkIcon, DocumentIcon, XIcon, UserIcon, CalendarIcon, CalendarCheckIcon, ClipboardIcon, ElevatorDoorsIcon, NoElevatorIcon, PhotoIcon, MenuIcon, CurrencyDollarIcon, ChevronUpIcon, ChevronDownIcon, ArchiveIcon, ListIcon } from "@/app/components/icons";
 import EditViewingModal from "./EditViewingModal";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import ArchiveConfirmationModal from "./ArchiveConfirmationModal";
@@ -13,6 +13,13 @@ import ExtraExpensesModal from "./ExtraExpensesModal";
 import VisibilityModal from "./VisibilityModal";
 import TotalCostModal from "./TotalCostModal";
 import { getOutcomeStatusClasses } from "./outcomeStatusStyles";
+import {
+  DEFAULT_COLUMNS,
+  loadColumnConfig,
+  saveColumnConfig,
+  type ColumnConfigItem,
+  MENU_COLUMN_ID,
+} from "./viewingsTableColumns";
 
 interface Stakeholder {
   id: number;
@@ -347,6 +354,10 @@ export default function ViewingsTable({
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
+  const [columnConfig, setColumnConfig] = useState<ColumnConfigItem[]>(DEFAULT_COLUMNS);
+  const [columnsPopoverOpen, setColumnsPopoverOpen] = useState(false);
+  const columnsPopoverRef = useRef<HTMLDivElement>(null);
+  const [columnDragIndex, setColumnDragIndex] = useState<number | null>(null);
 
   // Extract fetchExpenseTotals as a reusable function
   const fetchExpenseTotals = async (viewingsToFetch: Viewing[]) => {
@@ -626,6 +637,16 @@ export default function ViewingsTable({
     setLocalViewings(viewings);
   }, [viewings]);
 
+  // Hydrate column config from sessionStorage on mount
+  useEffect(() => {
+    setColumnConfig(loadColumnConfig());
+  }, []);
+
+  // Persist column config when it changes
+  useEffect(() => {
+    saveColumnConfig(columnConfig);
+  }, [columnConfig]);
+
   // Handle column header click for sorting
   const handleSort = (column: string) => {
     if (sortColumn === column) {
@@ -736,6 +757,343 @@ export default function ViewingsTable({
     return sortDirection === 'asc' ? comparison : -comparison;
   });
 
+  // Handle click outside to close columns popover
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (columnsPopoverOpen && columnsPopoverRef.current) {
+        const target = event.target as HTMLElement;
+        if (!columnsPopoverRef.current.contains(target)) {
+          setColumnsPopoverOpen(false);
+        }
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [columnsPopoverOpen]);
+
+  const toggleColumnVisibility = (id: string) => {
+    setColumnConfig((prev) => {
+      const next = prev.map((c) =>
+        c.id === id ? { ...c, visible: !c.visible } : c
+      );
+      const newVisibleCount = next.filter((c) => c.visible).length;
+      if (newVisibleCount === 0) return prev;
+      return next;
+    });
+  };
+  const reorderColumns = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    setColumnConfig((prev) => {
+      const copy = [...prev];
+      const [removed] = copy.splice(fromIndex, 1);
+      copy.splice(toIndex, 0, removed);
+      return copy;
+    });
+  };
+  const resetColumnsToDefault = () => {
+    setColumnConfig([...DEFAULT_COLUMNS]);
+  };
+
+  const visibleColumns = useMemo(
+    () => [
+      ...columnConfig.filter((c) => c.visible),
+      { id: MENU_COLUMN_ID, label: "⋮", visible: true as const },
+    ],
+    [columnConfig]
+  );
+
+  const SORTABLE_COLUMN_IDS = new Set([
+    "id", "address", "size", "price", "pricePerM", "bedrooms", "floor",
+    "rent", "extra", "priceExtra", "eurPerSqmEx", "totalCost", "agent",
+    "visit", "schedule",
+  ]);
+
+  const visibleColumnIds = useMemo(() => visibleColumns.map((c) => c.id), [visibleColumns]);
+  const isIdVisibleBeforeAddress = visibleColumnIds.indexOf("id") >= 0 && visibleColumnIds.indexOf("id") < visibleColumnIds.indexOf("address");
+
+  const getHeaderClassName = (colId: string): string => {
+    const base = "px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400 sm:px-1.5";
+    if (colId === "id")
+      return `sticky left-0 z-20 w-10 border-r border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50 ${base}`;
+    if (colId === "address") {
+      const leftClass = isIdVisibleBeforeAddress ? "left-10" : "left-0";
+      return `sticky ${leftClass} z-20 w-[120px] max-w-[120px] border-r border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50 ${base}`;
+    }
+    if (colId === "ad") return "relative z-10 w-8 px-0.5 text-center " + base;
+    if (colId === "photos") return "w-12 min-w-[48px] px-1 text-center " + base;
+    if (colId === "outcome") return "w-28 px-1 " + base;
+    if (colId === "comments" || colId === "visit" || colId === "schedule" || colId === "menu")
+      return "w-8 px-0.5 text-center " + base;
+    return "w-12 px-1 " + base;
+  };
+
+  const getHeaderAlign = (colId: string): "left" | "center" | "right" => {
+    if (["ad", "photos", "bedrooms", "comments", "visit", "schedule", "menu"].includes(colId))
+      return "center";
+    return "left";
+  };
+
+  const rowBgClass = (viewing: Viewing) =>
+    viewing.isArchive
+      ? "bg-orange-50/30 dark:bg-orange-900/10 group-hover:bg-orange-100/40 dark:group-hover:bg-orange-900/20"
+      : `${getOverallLevelBgColor(viewing.overallLevel, viewing.isArchive) || "bg-white dark:bg-zinc-900"} group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800/50`;
+
+  const getCellClassName = (colId: string, viewing: Viewing): string => {
+    const base = "whitespace-nowrap px-1 py-2 text-xs transition-colors dark:text-zinc-50 sm:px-1.5";
+    const border = "border-r border-zinc-200 dark:border-zinc-700";
+    if (colId === "id")
+      return `sticky left-0 z-10 w-10 font-medium text-zinc-900 ${border} ${base} ${rowBgClass(viewing)}`;
+    if (colId === "address") {
+      const leftClass = isIdVisibleBeforeAddress ? "left-10 sm:left-10" : "left-0";
+      return `sticky ${leftClass} z-10 w-[120px] max-w-[120px] text-zinc-900 ${border} ${base} ${rowBgClass(viewing)}`;
+    }
+    if (colId === "ad" || colId === "photos") return `relative z-10 w-8 px-0.5 py-2 text-center text-xs ${colId === "photos" ? "w-12 min-w-[48px] px-1" : ""}`;
+    if (colId === "comments" || colId === "visit" || colId === "schedule" || colId === "menu")
+      return "whitespace-nowrap px-0.5 py-2 text-center text-xs";
+    return "whitespace-nowrap px-1 py-2 text-xs text-zinc-600 dark:text-zinc-400";
+  };
+
+  const renderTableCell = (colId: string, viewing: Viewing): React.ReactNode => {
+    switch (colId) {
+      case "id":
+        return (
+          <div className="flex items-center gap-1">
+            {viewing.isArchive && (
+              <span title="Archived">
+                <ArchiveIcon className="h-3 w-3 text-orange-500 dark:text-orange-400 flex-shrink-0" />
+              </span>
+            )}
+            <span className={viewing.isArchive ? "line-through decoration-orange-400" : ""}>
+              {viewing.id}
+            </span>
+          </div>
+        );
+      case "address":
+        return (
+          <div className="truncate" style={{ boxSizing: "border-box" }}>
+            {viewing.linkAddress ? (
+              <a
+                href={viewing.linkAddress}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`hover:underline ${viewing.isArchive ? "text-blue-500 hover:text-blue-700 dark:text-blue-500 dark:hover:text-blue-400 line-through decoration-orange-400" : "text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"}`}
+                title={viewing.address ?? undefined}
+              >
+                {viewing.address}
+              </a>
+            ) : (
+              <span className={viewing.isArchive ? "line-through decoration-orange-400" : ""} title={viewing.address ?? undefined}>
+                {viewing.address}
+              </span>
+            )}
+          </div>
+        );
+      case "ad":
+        return viewing.linkAd ? (
+          <a href={viewing.linkAd} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center text-zinc-600 hover:text-blue-600 transition-colors dark:text-zinc-400 dark:hover:text-blue-400" title="Open ad link">
+            <ExternalLinkIcon className="h-3.5 w-3.5" />
+          </a>
+        ) : (
+          <span className="text-zinc-300 dark:text-zinc-700">-</span>
+        );
+      case "photos":
+        return viewing.linkToPhotos ? (
+          <a href={viewing.linkToPhotos} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center text-zinc-600 hover:text-blue-600 transition-colors dark:text-zinc-400 dark:hover:text-blue-400" title="Open photos link">
+            <PhotoIcon className="h-3.5 w-3.5" />
+          </a>
+        ) : (
+          <span className="text-zinc-300 dark:text-zinc-700">-</span>
+        );
+      case "size": {
+        const size = toNumber(viewing.size);
+        return size !== null ? `${size} m²` : "-";
+      }
+      case "price": {
+        const isEditing = editingCell?.viewingId === viewing.id && editingCell?.field === "price";
+        const price = toNumber(viewing.price);
+        if (isEditing) {
+          return (
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                value={editingValue}
+                onChange={(e) => setEditingValue(e.target.value)}
+                onBlur={() => { const v = parseFloat(editingValue.trim()); if (!isNaN(v) && v >= 0) handleCellEditSave(viewing.id, "price"); else handleCellEditCancel(); }}
+                onKeyDown={(e) => { if (e.key === "Enter") { const v = parseFloat(editingValue.trim()); if (!isNaN(v) && v >= 0) handleCellEditSave(viewing.id, "price"); } else if (e.key === "Escape") handleCellEditCancel(); }}
+                autoFocus
+                className="w-20 rounded border border-zinc-300 px-1 py-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                disabled={isSavingCell}
+              />
+            </div>
+          );
+        }
+        return (
+          <button onClick={() => handleCellEditStart(viewing.id, "price", price)} className="hover:underline cursor-pointer font-medium text-zinc-900 dark:text-zinc-50" title="Click to edit price">
+            {price !== null ? `€${price.toLocaleString()}` : "-"}
+          </button>
+        );
+      }
+      case "pricePerM": {
+        const price = toNumber(viewing.price);
+        const size = toNumber(viewing.size);
+        return price !== null && size !== null && size > 0 ? `€${Math.round(price / size).toLocaleString()}` : "-";
+      }
+      case "bedrooms": {
+        const bedrooms = toNumber(viewing.bedrooms);
+        return bedrooms !== null ? bedrooms : "-";
+      }
+      case "floor":
+        return (
+          <div className="flex items-center gap-0.5">
+            {toNumber(viewing.floor) !== null ? toNumber(viewing.floor) : "-"}
+            {viewing.isElevator ? (
+              <span className="inline-flex items-center justify-center rounded-full bg-green-100 px-0.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300" title="Elevator available">
+                <ElevatorDoorsIcon className="h-2.5 w-2.5" />
+              </span>
+            ) : (
+              <span className="inline-flex items-center justify-center rounded-full bg-red-100 px-0.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-300" title="No elevator">
+                <NoElevatorIcon className="h-2.5 w-2.5" />
+              </span>
+            )}
+          </div>
+        );
+      case "rent": {
+        const isEditing = editingCell?.viewingId === viewing.id && editingCell?.field === "rent";
+        const rent = toNumber(viewing.expectedMinimalRent);
+        if (isEditing) {
+          return (
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                value={editingValue}
+                onChange={(e) => setEditingValue(e.target.value)}
+                onBlur={() => { const v = parseFloat(editingValue.trim()); if (!isNaN(v) && v >= 0) handleCellEditSave(viewing.id, "rent"); else handleCellEditCancel(); }}
+                onKeyDown={(e) => { if (e.key === "Enter") { const v = parseFloat(editingValue.trim()); if (!isNaN(v) && v >= 0) handleCellEditSave(viewing.id, "rent"); } else if (e.key === "Escape") handleCellEditCancel(); }}
+                autoFocus
+                className="w-20 rounded border border-zinc-300 px-1 py-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+                disabled={isSavingCell}
+              />
+            </div>
+          );
+        }
+        return (
+          <button onClick={() => handleCellEditStart(viewing.id, "rent", rent)} className="hover:underline cursor-pointer font-medium text-zinc-900 dark:text-zinc-50" title="Click to edit rent">
+            {rent !== null ? `€${rent.toLocaleString()}` : "-"}
+          </button>
+        );
+      }
+      case "extra": {
+        const total = expenseTotals[viewing.id] ?? null;
+        if (total === null) return <span className="text-zinc-300 dark:text-zinc-700">-</span>;
+        return (
+          <button onClick={() => handleExtraExpensesClick(viewing)} className="transition-colors hover:underline cursor-pointer font-medium text-zinc-900 dark:text-zinc-50" title="Click to manage extra expenses">
+            {total !== 0 ? `€${Math.round(total).toLocaleString("en-US")}` : "€0"}
+          </button>
+        );
+      }
+      case "priceExtra": {
+        const extraTotal = expenseTotals[viewing.id] ?? 0;
+        const priceExtra = calculatePriceExtra(viewing, extraTotal);
+        return <span className="font-medium text-zinc-900 dark:text-zinc-50">{priceExtra > 0 ? `€${Math.round(priceExtra).toLocaleString("en-US")}` : "-"}</span>;
+      }
+      case "eurPerSqmEx": {
+        const extraTotal = expenseTotals[viewing.id] ?? 0;
+        const eurPerSqmEx = calculatePriceExtraPerSqm(viewing, extraTotal);
+        return <span className="font-medium text-zinc-900 dark:text-zinc-50">{eurPerSqmEx !== null ? `€${Math.round(eurPerSqmEx).toLocaleString("en-US")}` : "-"}</span>;
+      }
+      case "totalCost": {
+        const extraTotal = expenseTotals[viewing.id] ?? 0;
+        const totalCost = calculateTotalCost(viewing, extraTotal);
+        return (
+          <button onClick={() => handleTotalCostClick(viewing)} className="hover:underline cursor-pointer font-medium text-zinc-900 dark:text-zinc-50" title="Click to view total cost breakdown">
+            {totalCost > 0 ? `€${Math.round(totalCost).toLocaleString("en-US")}` : "-"}
+          </button>
+        );
+      }
+      case "agent":
+        return viewing.agentStakeholder ? (
+          <span className="truncate" title={viewing.agentStakeholder.name}>{viewing.agentStakeholder.name}</span>
+        ) : (
+          <span className="text-zinc-300 dark:text-zinc-700">-</span>
+        );
+      case "outcome":
+        return outcomeStatuses.length === 0 ? (
+          <span className="text-zinc-300 dark:text-zinc-700">-</span>
+        ) : (
+          <select
+            value={viewing.outcomeStatus?.id ?? ""}
+            onChange={(e) => handleOutcomeStatusChange(viewing, e.target.value === "" ? null : Number(e.target.value))}
+            className={`max-w-[8rem] cursor-pointer truncate rounded-full border px-2 py-0.5 text-xs font-medium outline-none transition-colors ${getOutcomeStatusClasses(viewing.outcomeStatus?.id ?? null)}`}
+          >
+            <option value="">No outcome</option>
+            {outcomeStatuses.map((status) => (
+              <option key={status.id} value={status.id}>{status.name}</option>
+            ))}
+          </select>
+        );
+      case "comments":
+        return viewing.comments?.trim() ? (
+          <button onClick={() => handleViewComments(viewing.comments)} className="inline-flex items-center justify-center rounded-lg p-0.5 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50" title="View comments" aria-label="View comments">
+            <DocumentIcon className="h-3.5 w-3.5" />
+          </button>
+        ) : (
+          <span className="text-zinc-300 dark:text-zinc-700">-</span>
+        );
+      case "visit":
+        return (
+          <button onClick={() => handleVisitDetailsClick(viewing)} className="inline-flex items-center justify-center rounded-lg p-0.5 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50" title={`Visit details (${calculateCompletionPercentage(viewing)}% complete)`} aria-label={`Visit details (${calculateCompletionPercentage(viewing)}% complete)`}>
+            <ProgressClipboardIcon completionPercentage={calculateCompletionPercentage(viewing)} />
+          </button>
+        );
+      case "schedule":
+        return (
+          <button
+            onClick={() => handleScheduleVisit(viewing)}
+            className={`inline-flex items-center justify-center rounded-lg p-0.5 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 ${viewing.viewingDate ? "text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300" : "text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"}`}
+            title={viewing.viewingDate ? "View/edit scheduled visit" : "Schedule visit"}
+            aria-label={viewing.viewingDate ? "View/edit scheduled visit" : "Schedule visit"}
+          >
+            {viewing.viewingDate ? <CalendarCheckIcon className="h-3.5 w-3.5" /> : <CalendarIcon className="h-3.5 w-3.5" />}
+          </button>
+        );
+      case "menu":
+        return (
+          <div className="menu-container relative flex items-center justify-center">
+            <button onClick={() => handleMenuToggle(viewing.id)} className="inline-flex items-center justify-center rounded-lg p-0.5 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50" title="Actions" aria-label="Actions">
+              <MenuIcon className="h-3.5 w-3.5" />
+            </button>
+            {openMenuRowId === viewing.id && (
+              <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+                <div className="py-0.5">
+                  <button onClick={() => handleAdditionalDetailsClick(viewing)} className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700">
+                    <PhotoIcon className="h-3.5 w-3.5" /><span>Additional Details</span>
+                  </button>
+                  <button onClick={() => handleExtraExpensesClick(viewing)} className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700">
+                    <CurrencyDollarIcon className="h-3.5 w-3.5" /><span>Extra Expenses</span>
+                  </button>
+                  <button onClick={() => handleVisibilityClick(viewing)} className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700">
+                    <UserIcon className="h-3.5 w-3.5" /><span>Manage Visibility</span>
+                  </button>
+                  <div className="my-0.5 border-t border-zinc-200 dark:border-zinc-700" />
+                  <button onClick={() => handleEditClick(viewing)} className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700">
+                    <EditIcon className="h-3.5 w-3.5" /><span>Edit Basic Details</span>
+                  </button>
+                  <button onClick={() => handleArchiveClick(viewing)} className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-orange-600 transition-colors hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20 dark:hover:text-orange-300">
+                    <ArchiveIcon className="h-3.5 w-3.5" /><span>{viewing.isArchive ? "Unarchive" : "Archive"}</span>
+                  </button>
+                  <button onClick={() => handleDeleteClick(viewing)} className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300">
+                    <TrashIcon className="h-3.5 w-3.5" /><span>Delete</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   // Handle click outside to close menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -843,120 +1201,105 @@ export default function ViewingsTable({
   return (
     <>
       {/* Desktop Table View */}
-      <div className="hidden md:block overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="hidden md:block">
+        {/* Toolbar: Columns button */}
+        <div className="mb-2 flex justify-end">
+          <div className="relative" ref={columnsPopoverRef}>
+            <button
+              type="button"
+              onClick={() => setColumnsPopoverOpen((open) => !open)}
+              className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              aria-expanded={columnsPopoverOpen}
+              aria-haspopup="true"
+            >
+              <ListIcon className="h-4 w-4" />
+              Columns
+            </button>
+            {columnsPopoverOpen && (
+              <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+                <div className="max-h-80 overflow-y-auto">
+                  {columnConfig.map((col, index) => (
+                    <div
+                      key={col.id}
+                      draggable
+                      data-index={index}
+                      onDragStart={() => setColumnDragIndex(index)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const targetIndex = parseInt((e.currentTarget as HTMLElement).dataset.index ?? "", 10);
+                        if (!isNaN(targetIndex) && columnDragIndex !== null && columnDragIndex !== targetIndex) {
+                          reorderColumns(columnDragIndex, targetIndex);
+                        }
+                        setColumnDragIndex(null);
+                      }}
+                      onDragEnd={() => setColumnDragIndex(null)}
+                      className={`flex items-center gap-2 px-3 py-1.5 text-sm ${
+                        columnDragIndex === index
+                          ? "opacity-50 bg-zinc-100 dark:bg-zinc-700"
+                          : "hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+                      }`}
+                    >
+                      <span
+                        className="cursor-grab touch-none text-zinc-400 dark:text-zinc-500"
+                        title="Drag to reorder"
+                        onMouseDown={(e) => e.preventDefault()}
+                      >
+                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+                          <path d="M8 6h2v2H8V6zm0 5h2v2H8v-2zm0 5h2v2H8v-2zm5-10h2v2h-2V6zm0 5h2v2h-2v-2zm0 5h2v2h-2v-2z" />
+                        </svg>
+                      </span>
+                      <label className="flex flex-1 cursor-pointer items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={col.visible}
+                          onChange={() => toggleColumnVisibility(col.id)}
+                          className="h-4 w-4 rounded border-zinc-300 text-zinc-600 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
+                        />
+                        <span className="text-zinc-900 dark:text-zinc-100">{col.label}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t border-zinc-200 px-3 py-2 dark:border-zinc-700">
+                  <button
+                    type="button"
+                    onClick={resetColumnsToDefault}
+                    className="text-xs font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+                  >
+                    Reset to default
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="overflow-x-auto">
           <table className="w-full divide-y divide-zinc-200 dark:divide-zinc-800" style={{ tableLayout: 'fixed', width: '100%' }}>
-            <thead className="bg-zinc-50 dark:bg-zinc-800/50">
+<thead className="bg-zinc-50 dark:bg-zinc-800/50">
               <tr>
-                <SortableHeader 
-                  column="id"
-                  className="sticky left-0 z-20 w-10 border-r border-zinc-200 bg-zinc-50 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-400 sm:px-1.5"
-                >
-                  ID
-                </SortableHeader>
-                <SortableHeader 
-                  column="address"
-                  className="sticky left-10 z-20 w-[120px] max-w-[120px] border-r border-zinc-200 bg-zinc-50 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-400 sm:left-10 sm:px-1.5"
-                  style={{ boxSizing: 'border-box' }}
-                >
-                  Address
-                </SortableHeader>
-                <th className="relative z-10 w-8 px-0.5 py-2 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
-                  Ad
-                </th>
-                <th className="w-12 min-w-[48px] px-1 py-2 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
-                  Photos
-                </th>
-                <SortableHeader 
-                  column="size"
-                  className="w-12 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
-                >
-                  Size
-                </SortableHeader>
-                <SortableHeader 
-                  column="price"
-                  className="w-16 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
-                >
-                  Price
-                </SortableHeader>
-                <SortableHeader 
-                  column="pricePerM"
-                  className="w-14 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
-                >
-                  €/m²
-                </SortableHeader>
-                <SortableHeader 
-                  column="bedrooms"
-                  className="w-10 px-0.5 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
-                  align="center"
-                >
-                  Beds
-                </SortableHeader>
-                <SortableHeader 
-                  column="floor"
-                  className="w-14 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
-                >
-                  Floor
-                </SortableHeader>
-                <SortableHeader 
-                  column="rent"
-                  className="w-16 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
-                >
-                  Rent
-                </SortableHeader>
-                <SortableHeader 
-                  column="extra"
-                  className="w-20 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
-                >
-                  Extra
-                </SortableHeader>
-                <SortableHeader 
-                  column="priceExtra"
-                  className="w-24 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
-                >
-                  Price Extra
-                </SortableHeader>
-                <SortableHeader 
-                  column="eurPerSqmEx"
-                  className="w-20 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
-                >
-                  €/m²Ex
-                </SortableHeader>
-                <SortableHeader 
-                  column="totalCost"
-                  className="w-24 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
-                >
-                  Total Cost
-                </SortableHeader>
-                <SortableHeader 
-                  column="agent"
-                  className="w-20 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
-                >
-                  Agent
-                </SortableHeader>
-                <th className="w-28 px-1 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
-                  Outcome
-                </th>
-                <th className="w-8 px-0.5 py-2 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
-                   
-                </th>
-                <SortableHeader 
-                  column="visit"
-                  className="w-8 px-0.5 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
-                  align="center"
-                >
-                  Visit
-                </SortableHeader>
-                <SortableHeader 
-                  column="schedule"
-                  className="w-8 px-0.5 py-2 text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400"
-                  align="center"
-                >
-                  Schedule
-                </SortableHeader>
-                <th className="w-8 px-0.5 py-2 text-center text-xs font-medium tracking-wider text-zinc-500 dark:text-zinc-400">
-                  ⋮
-                </th>
+                {visibleColumns.map((col) =>
+                  SORTABLE_COLUMN_IDS.has(col.id) ? (
+                    <SortableHeader
+                      key={col.id}
+                      column={col.id}
+                      className={getHeaderClassName(col.id)}
+                      align={getHeaderAlign(col.id)}
+                      style={col.id === "address" ? { boxSizing: "border-box" } : undefined}
+                    >
+                      {col.label}
+                    </SortableHeader>
+                  ) : (
+                    <th
+                      key={col.id}
+                      className={getHeaderClassName(col.id)}
+                    >
+                      {col.label}
+                    </th>
+                  )
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 bg-white dark:divide-zinc-800 dark:bg-zinc-900">
@@ -964,430 +1307,25 @@ export default function ViewingsTable({
                 <tr
                   key={viewing.id}
                   className={`group transition-colors ${
-                    viewing.isArchive 
-                      ? "opacity-75 bg-orange-50/30 dark:bg-orange-900/10 border-l-2 border-l-orange-400" 
+                    viewing.isArchive
+                      ? "opacity-75 bg-orange-50/30 dark:bg-orange-900/10 border-l-2 border-l-orange-400"
                       : `${getOverallLevelBorderColor(viewing.overallLevel, viewing.isArchive)} ${getOverallLevelBgColor(viewing.overallLevel, viewing.isArchive)}`
                   } hover:bg-zinc-50 dark:hover:bg-zinc-800/50`}
                 >
-                  <td className={`sticky left-0 z-10 w-10 whitespace-nowrap border-r border-zinc-200 px-1 py-2 text-xs font-medium text-zinc-900 transition-colors dark:border-zinc-700 dark:text-zinc-50 sm:px-1.5 ${
-                    viewing.isArchive 
-                      ? "bg-orange-50/30 dark:bg-orange-900/10 group-hover:bg-orange-100/40 dark:group-hover:bg-orange-900/20" 
-                      : `${getOverallLevelBgColor(viewing.overallLevel, viewing.isArchive) || "bg-white dark:bg-zinc-900"} group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800/50`
-                  }`}>
-                    <div className="flex items-center gap-1">
-                      {viewing.isArchive && (
-                        <span title="Archived">
-                          <ArchiveIcon className="h-3 w-3 text-orange-500 dark:text-orange-400 flex-shrink-0" />
-                        </span>
-                      )}
-                      <span className={viewing.isArchive ? "line-through decoration-orange-400" : ""}>
-                        {viewing.id}
-                      </span>
-                    </div>
-                  </td>
-                  <td className={`sticky left-10 z-10 w-[120px] max-w-[120px] border-r border-zinc-200 px-1 py-2 text-xs text-zinc-900 transition-colors dark:border-zinc-700 dark:text-zinc-50 sm:left-10 sm:px-1.5 ${
-                    viewing.isArchive 
-                      ? "bg-orange-50/30 dark:bg-orange-900/10 group-hover:bg-orange-100/40 dark:group-hover:bg-orange-900/20" 
-                      : `${getOverallLevelBgColor(viewing.overallLevel, viewing.isArchive) || "bg-white dark:bg-zinc-900"} group-hover:bg-zinc-50 dark:group-hover:bg-zinc-800/50`
-                  }`} style={{ boxSizing: 'border-box' }}>
-                    <div className="truncate">
-                      {viewing.linkAddress ? (
-                        <a
-                          href={viewing.linkAddress}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`hover:underline ${
-                            viewing.isArchive 
-                              ? "text-blue-500 hover:text-blue-700 dark:text-blue-500 dark:hover:text-blue-400 line-through decoration-orange-400" 
-                              : "text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                          }`}
-                          title={viewing.address || undefined}
-                        >
-                          {viewing.address}
-                        </a>
-                      ) : (
-                        <span 
-                          className={viewing.isArchive ? "line-through decoration-orange-400" : ""}
-                          title={viewing.address || undefined}
-                        >
-                          {viewing.address}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="relative z-10 w-8 whitespace-nowrap px-0.5 py-2 text-center text-xs">
-                    {viewing.linkAd ? (
-                      <a
-                        href={viewing.linkAd}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center text-zinc-600 hover:text-blue-600 transition-colors dark:text-zinc-400 dark:hover:text-blue-400"
-                        title="Open ad link"
-                      >
-                        <ExternalLinkIcon className="h-3.5 w-3.5" />
-                      </a>
-                    ) : (
-                      <span className="text-zinc-300 dark:text-zinc-700">-</span>
-                    )}
-                  </td>
-                  <td className="w-12 min-w-[48px] whitespace-nowrap px-1 py-2 text-center text-xs">
-                    {viewing.linkToPhotos ? (
-                      <a
-                        href={viewing.linkToPhotos}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center text-zinc-600 hover:text-blue-600 transition-colors dark:text-zinc-400 dark:hover:text-blue-400"
-                        title="Open photos link"
-                      >
-                        <PhotoIcon className="h-3.5 w-3.5" />
-                      </a>
-                    ) : (
-                      <span className="text-zinc-300 dark:text-zinc-700">-</span>
-                    )}
-                  </td>
-                  <td className="whitespace-nowrap px-1 py-2 text-xs text-zinc-600 dark:text-zinc-400">
-                    {(() => {
-                      const size = toNumber(viewing.size);
-                      return size !== null ? `${size} m²` : "-";
-                    })()}
-                  </td>
-                  <td className="whitespace-nowrap px-1 py-2 text-xs font-medium text-zinc-900 dark:text-zinc-50">
-                    {(() => {
-                      const isEditing = editingCell?.viewingId === viewing.id && editingCell?.field === 'price';
-                      const price = toNumber(viewing.price);
-                      
-                      if (isEditing) {
-                        return (
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="number"
-                              value={editingValue}
-                              onChange={(e) => setEditingValue(e.target.value)}
-                              onBlur={() => {
-                                const value = parseFloat(editingValue.trim());
-                                if (!isNaN(value) && value >= 0) {
-                                  handleCellEditSave(viewing.id, 'price');
-                                } else {
-                                  handleCellEditCancel();
-                                }
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  const value = parseFloat(editingValue.trim());
-                                  if (!isNaN(value) && value >= 0) {
-                                    handleCellEditSave(viewing.id, 'price');
-                                  }
-                                } else if (e.key === 'Escape') {
-                                  handleCellEditCancel();
-                                }
-                              }}
-                              autoFocus
-                              className="w-20 rounded border border-zinc-300 px-1 py-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
-                              disabled={isSavingCell}
-                            />
-                          </div>
-                        );
-                      }
-                      
-                      return (
-                        <button
-                          onClick={() => handleCellEditStart(viewing.id, 'price', price)}
-                          className="hover:underline cursor-pointer"
-                          title="Click to edit price"
-                        >
-                          {price !== null ? `€${price.toLocaleString()}` : "-"}
-                        </button>
-                      );
-                    })()}
-                  </td>
-                  <td className="whitespace-nowrap px-1 py-2 text-xs font-medium text-zinc-900 dark:text-zinc-50">
-                    {(() => {
-                      const price = toNumber(viewing.price);
-                      const size = toNumber(viewing.size);
-                      if (price !== null && size !== null && size > 0) {
-                        const pricePerM = price / size;
-                        return `€${Math.round(pricePerM).toLocaleString()}`;
-                      }
-                      return "-";
-                    })()}
-                  </td>
-                  <td className="whitespace-nowrap px-0.5 py-2 text-center text-xs text-zinc-600 dark:text-zinc-400">
-                    {(() => {
-                      const bedrooms = toNumber(viewing.bedrooms);
-                      return bedrooms !== null ? bedrooms : "-";
-                    })()}
-                  </td>
-                  <td className="whitespace-nowrap px-1 py-2 text-xs text-zinc-600 dark:text-zinc-400">
-                    <div className="flex items-center gap-0.5">
-                      {(() => {
-                        const floor = toNumber(viewing.floor);
-                        return floor !== null ? floor : "-";
-                      })()}
-                      {viewing.isElevator ? (
-                        <span className="inline-flex items-center justify-center rounded-full bg-green-100 px-0.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300" title="Elevator available">
-                          <ElevatorDoorsIcon className="h-2.5 w-2.5" />
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center justify-center rounded-full bg-red-100 px-0.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-300" title="No elevator">
-                          <NoElevatorIcon className="h-2.5 w-2.5" />
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-1 py-2 text-xs font-medium text-zinc-900 dark:text-zinc-50">
-                    {(() => {
-                      const isEditing = editingCell?.viewingId === viewing.id && editingCell?.field === 'rent';
-                      const rent = toNumber(viewing.expectedMinimalRent);
-                      
-                      if (isEditing) {
-                        return (
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="number"
-                              value={editingValue}
-                              onChange={(e) => setEditingValue(e.target.value)}
-                              onBlur={() => {
-                                const value = parseFloat(editingValue.trim());
-                                if (!isNaN(value) && value >= 0) {
-                                  handleCellEditSave(viewing.id, 'rent');
-                                } else {
-                                  handleCellEditCancel();
-                                }
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  const value = parseFloat(editingValue.trim());
-                                  if (!isNaN(value) && value >= 0) {
-                                    handleCellEditSave(viewing.id, 'rent');
-                                  }
-                                } else if (e.key === 'Escape') {
-                                  handleCellEditCancel();
-                                }
-                              }}
-                              autoFocus
-                              className="w-20 rounded border border-zinc-300 px-1 py-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
-                              disabled={isSavingCell}
-                            />
-                          </div>
-                        );
-                      }
-                      
-                      return (
-                        <button
-                          onClick={() => handleCellEditStart(viewing.id, 'rent', rent)}
-                          className="hover:underline cursor-pointer"
-                          title="Click to edit rent"
-                        >
-                          {rent !== null ? `€${rent.toLocaleString()}` : "-"}
-                        </button>
-                      );
-                    })()}
-                  </td>
-                  <td className="whitespace-nowrap px-1 py-2 text-xs font-medium text-zinc-900 dark:text-zinc-50">
-                    {(() => {
-                      const total = expenseTotals[viewing.id] ?? null;
-                      
-                      if (total === null) {
-                        return <span className="text-zinc-300 dark:text-zinc-700">-</span>;
-                      }
-                      return (
-                        <button
-                          onClick={() => handleExtraExpensesClick(viewing)}
-                          className="transition-colors hover:underline cursor-pointer"
-                          title="Click to manage extra expenses"
-                        >
-                          {total !== 0 ? `€${Math.round(total).toLocaleString("en-US")}` : "€0"}
-                        </button>
-                      );
-                    })()}
-                  </td>
-                  <td className="whitespace-nowrap px-1 py-2 text-xs font-medium text-zinc-900 dark:text-zinc-50">
-                    {(() => {
-                      const extraTotal = expenseTotals[viewing.id] ?? 0;
-                      const priceExtra = calculatePriceExtra(viewing, extraTotal);
-                      return priceExtra > 0 ? `€${Math.round(priceExtra).toLocaleString("en-US")}` : "-";
-                    })()}
-                  </td>
-                  <td className="whitespace-nowrap px-1 py-2 text-xs font-medium text-zinc-900 dark:text-zinc-50">
-                    {(() => {
-                      const extraTotal = expenseTotals[viewing.id] ?? 0;
-                      const eurPerSqmEx = calculatePriceExtraPerSqm(viewing, extraTotal);
-                      return eurPerSqmEx !== null ? `€${Math.round(eurPerSqmEx).toLocaleString("en-US")}` : "-";
-                    })()}
-                  </td>
-                  <td className="whitespace-nowrap px-1 py-2 text-xs font-medium text-zinc-900 dark:text-zinc-50">
-                    {(() => {
-                      const extraTotal = expenseTotals[viewing.id] ?? 0;
-                      const totalCost = calculateTotalCost(viewing, extraTotal);
-                      return (
-                        <button
-                          onClick={() => handleTotalCostClick(viewing)}
-                          className="hover:underline cursor-pointer"
-                          title="Click to view total cost breakdown"
-                        >
-                          {totalCost > 0 ? `€${Math.round(totalCost).toLocaleString("en-US")}` : "-"}
-                        </button>
-                      );
-                    })()}
-                  </td>
-                  <td className="whitespace-nowrap px-1 py-2 text-xs text-zinc-600 dark:text-zinc-400">
-                    {viewing.agentStakeholder ? (
-                      <span
-                        className="truncate"
-                        title={viewing.agentStakeholder.name}
-                      >
-                        {viewing.agentStakeholder.name}
-                      </span>
-                    ) : (
-                      <span className="text-zinc-300 dark:text-zinc-700">-</span>
-                    )}
-                  </td>
-                  <td className="whitespace-nowrap px-1 py-2 text-xs text-zinc-600 dark:text-zinc-400">
-                    {outcomeStatuses.length === 0 ? (
-                      <span className="text-zinc-300 dark:text-zinc-700">-</span>
-                    ) : (
-                      <select
-                        value={viewing.outcomeStatus?.id ?? ""}
-                        onChange={(e) =>
-                          handleOutcomeStatusChange(
-                            viewing,
-                            e.target.value === "" ? null : Number(e.target.value)
-                          )
-                        }
-                        className={`max-w-[8rem] cursor-pointer truncate rounded-full border px-2 py-0.5 text-xs font-medium outline-none transition-colors ${getOutcomeStatusClasses(
-                          viewing.outcomeStatus?.id ?? null
-                        )}`}
-                      >
-                        <option value="">No outcome</option>
-                        {outcomeStatuses.map((status) => (
-                          <option key={status.id} value={status.id}>
-                            {status.name}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </td>
-                  <td className="whitespace-nowrap px-0.5 py-2 text-center text-xs">
-                    {viewing.comments && viewing.comments.trim() ? (
-                      <button
-                        onClick={() => handleViewComments(viewing.comments)}
-                        className="inline-flex items-center justify-center rounded-lg p-0.5 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
-                        title="View comments"
-                        aria-label="View comments"
-                      >
-                        <DocumentIcon className="h-3.5 w-3.5" />
-                      </button>
-                    ) : (
-                      <span className="text-zinc-300 dark:text-zinc-700">-</span>
-                    )}
-                  </td>
-                  <td className="whitespace-nowrap px-0.5 py-2 text-center text-xs">
-                    <button
-                      onClick={() => handleVisitDetailsClick(viewing)}
-                      className="inline-flex items-center justify-center rounded-lg p-0.5 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
-                      title={`Visit details (${calculateCompletionPercentage(viewing)}% complete)`}
-                      aria-label={`Visit details (${calculateCompletionPercentage(viewing)}% complete)`}
+                  {visibleColumns.map((col) => (
+                    <td
+                      key={col.id}
+                      className={getCellClassName(col.id, viewing)}
+                      style={col.id === "address" ? { boxSizing: "border-box" } : undefined}
                     >
-                      <ProgressClipboardIcon completionPercentage={calculateCompletionPercentage(viewing)} />
-                    </button>
-                  </td>
-                  <td className="whitespace-nowrap px-0.5 py-2 text-center text-xs">
-                    <button
-                      onClick={() => handleScheduleVisit(viewing)}
-                      className={`inline-flex items-center justify-center rounded-lg p-0.5 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 ${
-                        viewing.viewingDate
-                          ? "text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
-                          : "text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                      }`}
-                      title={viewing.viewingDate ? "View/edit scheduled visit" : "Schedule visit"}
-                      aria-label={viewing.viewingDate ? "View/edit scheduled visit" : "Schedule visit"}
-                    >
-                      {viewing.viewingDate ? (
-                        <CalendarCheckIcon className="h-3.5 w-3.5" />
-                      ) : (
-                        <CalendarIcon className="h-3.5 w-3.5" />
-                      )}
-                    </button>
-                  </td>
-                  <td className="whitespace-nowrap px-0.5 py-2 text-xs">
-                    <div className="menu-container relative flex items-center justify-center">
-                      <button
-                        onClick={() => handleMenuToggle(viewing.id)}
-                        className="inline-flex items-center justify-center rounded-lg p-0.5 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
-                        title="Actions"
-                        aria-label="Actions"
-                      >
-                        <MenuIcon className="h-3.5 w-3.5" />
-                      </button>
-                      
-                      {openMenuRowId === viewing.id && (
-                        <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
-                          <div className="py-0.5">
-                            {/* Additional Details */}
-                            <button
-                              onClick={() => handleAdditionalDetailsClick(viewing)}
-                              className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                            >
-                              <PhotoIcon className="h-3.5 w-3.5" />
-                              <span>Additional Details</span>
-                            </button>
-                            
-                            {/* Extra Expenses */}
-                            <button
-                              onClick={() => handleExtraExpensesClick(viewing)}
-                              className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                            >
-                              <CurrencyDollarIcon className="h-3.5 w-3.5" />
-                              <span>Extra Expenses</span>
-                            </button>
-                            
-                            {/* Manage Visibility */}
-                            <button
-                              onClick={() => handleVisibilityClick(viewing)}
-                              className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                            >
-                              <UserIcon className="h-3.5 w-3.5" />
-                              <span>Manage Visibility</span>
-                            </button>
-                            
-                            {/* Divider */}
-                            <div className="my-0.5 border-t border-zinc-200 dark:border-zinc-700" />
-                            
-                            {/* Edit */}
-                            <button
-                              onClick={() => handleEditClick(viewing)}
-                              className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                            >
-                              <EditIcon className="h-3.5 w-3.5" />
-                              <span>Edit Basic Details</span>
-                            </button>
-                            
-                            {/* Archive/Unarchive */}
-                            <button
-                              onClick={() => handleArchiveClick(viewing)}
-                              className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-orange-600 transition-colors hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20 dark:hover:text-orange-300"
-                            >
-                              <ArchiveIcon className="h-3.5 w-3.5" />
-                              <span>{viewing.isArchive ? 'Unarchive' : 'Archive'}</span>
-                            </button>
-                            
-                            {/* Delete */}
-                            <button
-                              onClick={() => handleDeleteClick(viewing)}
-                              className="flex w-full items-center gap-2.5 px-3 py-1.5 text-xs text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
-                            >
-                              <TrashIcon className="h-3.5 w-3.5" />
-                              <span>Delete</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </td>
+                      {renderTableCell(col.id, viewing)}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
         </div>
       </div>
 
