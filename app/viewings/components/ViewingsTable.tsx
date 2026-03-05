@@ -699,6 +699,10 @@ export default function ViewingsTable({
         aValue = toNumber(a.floor);
         bValue = toNumber(b.floor);
         break;
+      case 'constructionYear':
+        aValue = toNumber(a.constructionYear);
+        bValue = toNumber(b.constructionYear);
+        break;
       case 'rent':
         aValue = toNumber(a.expectedMinimalRent);
         bValue = toNumber(b.expectedMinimalRent);
@@ -803,10 +807,14 @@ export default function ViewingsTable({
   );
 
   const SORTABLE_COLUMN_IDS = new Set([
-    "id", "address", "size", "price", "pricePerM", "bedrooms", "floor",
+    "id", "address", "size", "price", "pricePerM", "bedrooms", "floor", "constructionYear",
     "rent", "extra", "priceExtra", "eurPerSqmEx", "totalCost", "agent",
     "visit", "schedule",
   ]);
+
+  /** Table header label: short "Year" for construction year, otherwise column label. */
+  const getHeaderLabel = (col: { id: string; label: string }) =>
+    col.id === "constructionYear" ? "Year" : col.label;
 
   const visibleColumnIds = useMemo(() => visibleColumns.map((c) => c.id), [visibleColumns]);
   const isIdVisibleBeforeAddress = visibleColumnIds.indexOf("id") >= 0 && visibleColumnIds.indexOf("id") < visibleColumnIds.indexOf("address");
@@ -957,6 +965,10 @@ export default function ViewingsTable({
             )}
           </div>
         );
+      case "constructionYear": {
+        const year = toNumber(viewing.constructionYear);
+        return year !== null ? year : "-";
+      }
       case "rent": {
         const isEditing = editingCell?.viewingId === viewing.id && editingCell?.field === "rent";
         const rent = toNumber(viewing.expectedMinimalRent);
@@ -1289,14 +1301,14 @@ export default function ViewingsTable({
                       align={getHeaderAlign(col.id)}
                       style={col.id === "address" ? { boxSizing: "border-box" } : undefined}
                     >
-                      {col.label}
+                      {getHeaderLabel(col)}
                     </SortableHeader>
                   ) : (
                     <th
                       key={col.id}
                       className={getHeaderClassName(col.id)}
                     >
-                      {col.label}
+                      {getHeaderLabel(col)}
                     </th>
                   )
                 )}
@@ -1340,6 +1352,7 @@ export default function ViewingsTable({
           const size = toNumber(viewing.size);
           const bedrooms = toNumber(viewing.bedrooms);
           const floor = toNumber(viewing.floor);
+          const constructionYear = toNumber(viewing.constructionYear);
           const extraTotal = expenseTotals[viewing.id] ?? 0;
           const totalCost = calculateTotalCost(viewing, extraTotal);
           const pricePerM = price !== null && size !== null && size > 0 ? price / size : null;
@@ -1467,6 +1480,14 @@ export default function ViewingsTable({
                           <NoElevatorIcon className="h-2.5 w-2.5" />
                         </span>
                       )}
+                    </div>
+                  </div>
+
+                  {/* Year (construction) */}
+                  <div className="flex-1 min-w-[80px]">
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">Year</div>
+                    <div className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                      {constructionYear !== null ? constructionYear : "-"}
                     </div>
                   </div>
 

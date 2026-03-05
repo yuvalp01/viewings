@@ -22,6 +22,7 @@ export const DEFAULT_COLUMNS: ColumnConfigItem[] = [
   { id: "pricePerM", label: "€/m²", visible: true },
   { id: "bedrooms", label: "Beds", visible: false },
   { id: "floor", label: "Floor", visible: true },
+  { id: "constructionYear", label: "Construction year", visible: false },
   { id: "rent", label: "Rent", visible: true },
   { id: "extra", label: "Extra", visible: true },
   { id: "priceExtra", label: "Price Extra", visible: true },
