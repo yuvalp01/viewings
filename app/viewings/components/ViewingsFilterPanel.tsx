@@ -9,12 +9,18 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
 } from "@/app/components/icons";
-import { getOutcomeStatusClasses } from "./outcomeStatusStyles";
+import { getOutcomeStatusClasses, NULL_OUTCOME_ID } from "./outcomeStatusStyles";
 
 interface OutcomeStatusOption {
   id: number;
   name: string;
 }
+
+/** Option for "No outcome" (NULL) – not from DB. */
+const NO_OUTCOME_OPTION: { id: typeof NULL_OUTCOME_ID; name: string } = {
+  id: NULL_OUTCOME_ID,
+  name: "No outcome",
+};
 
 interface ViewingsFilterPanelProps {
   outcomeStatuses: OutcomeStatusOption[];
@@ -52,24 +58,28 @@ export default function ViewingsFilterPanel({ outcomeStatuses }: ViewingsFilterP
     setSizeMaxInput(searchParams.get("sizeMax") ?? "");
   }, [searchParams]);
 
-  // When there is no explicit outcomeStatusIds param, we treat 1–4 as the default selection.
+  // When there is no explicit outcomeStatusIds param, default is 1–4 plus "No outcome" (null).
   const todayActive = searchParams.get("filter") === "today";
   const scheduledActive = searchParams.get("filter") === "scheduled";
   const archiveActive = searchParams.get("showArchived") === "true";
   const outcomeStatusIdsRaw = searchParams.get("outcomeStatusIds");
-  const selectedOutcomeStatusIds = useMemo(() => {
+  const selectedOutcomeStatusIds = useMemo((): (number | typeof NULL_OUTCOME_ID)[] => {
     if (outcomeStatusIdsRaw === "none") {
       // Explicit "no outcome filter"
       return [];
     }
     if (!outcomeStatusIdsRaw || outcomeStatusIdsRaw.trim() === "") {
-      // No explicit param → default selection 1–4
-      return [1, 2, 3, 4];
+      // No explicit param → default: 1–4 and "No outcome"
+      return [1, 2, 3, 4, NULL_OUTCOME_ID];
     }
     return outcomeStatusIdsRaw
       .split(",")
-      .map((value) => parseInt(value.trim(), 10))
-      .filter((value) => !Number.isNaN(value));
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .map((value) => (value === "null" ? NULL_OUTCOME_ID : parseInt(value, 10)))
+      .filter((v): v is number | typeof NULL_OUTCOME_ID =>
+        v === NULL_OUTCOME_ID || (typeof v === "number" && !Number.isNaN(v))
+      );
   }, [outcomeStatusIdsRaw]);
 
   const hasOutcomeStatusFilter =
@@ -134,30 +144,33 @@ export default function ViewingsFilterPanel({ outcomeStatuses }: ViewingsFilterP
     });
   };
 
-  const handleOutcomeStatusToggle = (id: number) => {
+  const handleOutcomeStatusToggle = (id: number | typeof NULL_OUTCOME_ID) => {
     updateSearchParams((params) => {
       const raw = params.get("outcomeStatusIds");
-      let currentIds: number[] = [];
+      let currentIds: (number | typeof NULL_OUTCOME_ID)[] = [];
       if (raw === "none") {
         currentIds = [];
       } else if (!raw || raw.trim() === "") {
-        // No explicit param yet → start from the default 1–4
-        currentIds = [1, 2, 3, 4];
+        // No explicit param yet → start from default 1–4 and "No outcome"
+        currentIds = [1, 2, 3, 4, NULL_OUTCOME_ID];
       } else {
         currentIds = raw
           .split(",")
-          .map((value) => parseInt(value.trim(), 10))
-          .filter((value) => !Number.isNaN(value));
+          .map((value) => value.trim())
+          .filter(Boolean)
+          .map((value) => (value === "null" ? NULL_OUTCOME_ID : parseInt(value, 10)))
+          .filter((v): v is number | typeof NULL_OUTCOME_ID =>
+            v === NULL_OUTCOME_ID || (typeof v === "number" && !Number.isNaN(v))
+          );
       }
 
       const exists = currentIds.includes(id);
       const nextIds = exists ? currentIds.filter((value) => value !== id) : [...currentIds, id];
 
       if (nextIds.length === 0) {
-        // Explicitly represent "no outcome filter"
         params.set("outcomeStatusIds", "none");
       } else {
-        params.set("outcomeStatusIds", nextIds.join(","));
+        params.set("outcomeStatusIds", nextIds.map((v) => String(v)).join(","));
       }
     });
   };
@@ -354,7 +367,7 @@ export default function ViewingsFilterPanel({ outcomeStatuses }: ViewingsFilterP
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {outcomeStatuses.map((status) => {
+                  {[...outcomeStatuses, NO_OUTCOME_OPTION].map((status) => {
                     const isSelected = selectedOutcomeStatusIds.includes(status.id);
                     return (
                       <button

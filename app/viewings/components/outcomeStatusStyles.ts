@@ -1,4 +1,11 @@
-export function getOutcomeStatusClasses(outcomeStatusId?: number | null): string {
+/** Sentinel for "No outcome" (NULL) in the outcome filter. */
+export const NULL_OUTCOME_ID = "null" as const;
+
+export function getOutcomeStatusClasses(outcomeStatusId?: number | string | null): string {
+  // "No outcome" (NULL) – neutral/slate style
+  if (outcomeStatusId === NULL_OUTCOME_ID || outcomeStatusId === null) {
+    return "bg-slate-50 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300 border-slate-200 dark:border-slate-600";
+  }
   switch (outcomeStatusId) {
     case 1: // Good opportunity
       return "bg-emerald-50 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200 border-emerald-200 dark:border-emerald-700";

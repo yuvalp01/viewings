@@ -80,30 +80,46 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
     whereClause.size.lte = sizeMax;
   }
 
-  // Apply outcome status filter (multi-select via comma-separated ids in outcomeStatusIds)
+  // Apply outcome status filter (multi-select via comma-separated ids; "null" = no outcome / NULL)
   const outcomeStatusIdsParam = searchParams?.outcomeStatusIds;
   let outcomeStatusFilterIds: number[] | null = null;
+  let outcomeIncludeNull = false;
 
   if (outcomeStatusIdsParam === "none") {
-    // User explicitly chose "no outcome filter" (e.g. via Clear all)
     outcomeStatusFilterIds = null;
+    outcomeIncludeNull = false;
   } else if (outcomeStatusIdsParam && outcomeStatusIdsParam.trim() !== "") {
-    // Explicit selection from URL
-    const parsed = outcomeStatusIdsParam
-      .split(",")
-      .map((value) => parseInt(value.trim(), 10))
+    const tokens = outcomeStatusIdsParam.split(",").map((v) => v.trim()).filter(Boolean);
+    const numericIds = tokens
+      .filter((t) => t !== "null")
+      .map((value) => parseInt(value, 10))
       .filter((value) => !Number.isNaN(value));
-
-    outcomeStatusFilterIds = parsed.length > 0 ? parsed : null;
+    outcomeIncludeNull = tokens.includes("null");
+    outcomeStatusFilterIds = numericIds.length > 0 ? numericIds : null;
   } else {
-    // No explicit param → apply default 1–4
+    // No explicit param → default: 1–4 and "No outcome" (null)
     outcomeStatusFilterIds = [1, 2, 3, 4];
+    outcomeIncludeNull = true;
   }
 
-  if (outcomeStatusFilterIds && outcomeStatusFilterIds.length > 0) {
-    whereClause.outcomeStatusId = {
-      in: outcomeStatusFilterIds,
-    };
+  if (outcomeStatusFilterIds !== null && outcomeStatusFilterIds.length > 0) {
+    if (outcomeIncludeNull) {
+      // (outcome in [...] OR outcome is null) – add as AND so other filters still apply
+      whereClause.AND = [
+        ...(Array.isArray(whereClause.AND) ? whereClause.AND : []),
+        {
+          OR: [
+            { outcomeStatusId: { in: outcomeStatusFilterIds } },
+            { outcomeStatusId: null },
+          ],
+        },
+      ];
+    } else {
+      whereClause.outcomeStatusId = { in: outcomeStatusFilterIds };
+    }
+  } else if (outcomeIncludeNull) {
+    // Only "No outcome" selected
+    whereClause.outcomeStatusId = null;
   }
 
   // Apply filter based on filter type
@@ -284,7 +300,7 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
   });
 
   const hasOutcomeStatusFilter =
-    outcomeStatusFilterIds !== null && outcomeStatusFilterIds.length > 0;
+    (outcomeStatusFilterIds !== null && outcomeStatusFilterIds.length > 0) || outcomeIncludeNull;
   const hasPriceFilter = priceMinRaw !== undefined || priceMaxRaw !== undefined;
   const hasSizeFilter = sizeMinRaw !== undefined || sizeMaxRaw !== undefined;
   const hasQuickFilter = filterType === "today" || filterType === "scheduled";
