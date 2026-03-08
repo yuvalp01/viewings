@@ -354,6 +354,7 @@ export default function ViewingsTable({
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
+  const [mobileOutcomePickerViewing, setMobileOutcomePickerViewing] = useState<Viewing | null>(null);
   const [columnConfig, setColumnConfig] = useState<ColumnConfigItem[]>(DEFAULT_COLUMNS);
   const [columnsPopoverOpen, setColumnsPopoverOpen] = useState(false);
   const columnsPopoverRef = useRef<HTMLDivElement>(null);
@@ -1498,9 +1499,10 @@ export default function ViewingsTable({
                       {pricePerM !== null ? `€${Math.round(pricePerM).toLocaleString()}` : "-"}
                     </div>
                   </div>
+
                 </div>
 
-                {/* Visit Date/Time and Agent Row */}
+                {/* Visit Date/Time, Agent, and Outcome Row */}
                 <div className="mt-2 pt-2 border-t border-zinc-200 dark:border-zinc-800">
                   <div className="flex flex-wrap items-start gap-4">
                     {/* Agent - Always Visible */}
@@ -1516,6 +1518,21 @@ export default function ViewingsTable({
                         )}
                       </div>
                     </div>
+
+                    {/* Outcome Status - button opens modal with large options on mobile */}
+                    {outcomeStatuses.length > 0 && (
+                      <div className="flex-1 min-w-[120px]">
+                        <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">Outcome</div>
+                        <button
+                          type="button"
+                          onClick={() => setMobileOutcomePickerViewing(viewing)}
+                          className={`w-full max-w-[10rem] cursor-pointer truncate rounded-full border px-2 py-1 text-xs font-medium outline-none transition-colors flex items-center justify-between gap-1 ${getOutcomeStatusClasses(viewing.outcomeStatus?.id ?? null)}`}
+                        >
+                          <span className="truncate">{viewing.outcomeStatus?.name ?? "No outcome"}</span>
+                          <ChevronDownIcon className="h-3.5 w-3.5 flex-shrink-0" />
+                        </button>
+                      </div>
+                    )}
 
                     {/* Visit Date/Time */}
                     {viewing.viewingDate && (
@@ -1838,6 +1855,55 @@ export default function ViewingsTable({
               <div className="whitespace-pre-wrap text-sm text-zinc-900 dark:text-zinc-50">
                 {viewingComments}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Outcome Picker - large options for easy tapping */}
+      {mobileOutcomePickerViewing && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm"
+          onClick={() => setMobileOutcomePickerViewing(null)}
+        >
+          <div
+            className="w-full max-h-[85vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white shadow-xl dark:bg-zinc-900 sm:max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+                Outcome
+              </h2>
+              <button
+                onClick={() => setMobileOutcomePickerViewing(null)}
+                className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                aria-label="Close"
+              >
+                <XIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-2">
+              <button
+                onClick={() => {
+                  handleOutcomeStatusChange(mobileOutcomePickerViewing, null);
+                  setMobileOutcomePickerViewing(null);
+                }}
+                className={`w-full text-left px-4 py-3 rounded-xl text-base font-medium transition-colors ${getOutcomeStatusClasses(null)}`}
+              >
+                No outcome
+              </button>
+              {outcomeStatuses.map((status) => (
+                <button
+                  key={status.id}
+                  onClick={() => {
+                    handleOutcomeStatusChange(mobileOutcomePickerViewing, status.id);
+                    setMobileOutcomePickerViewing(null);
+                  }}
+                  className={`w-full text-left px-4 py-3 rounded-xl text-base font-medium transition-colors ${getOutcomeStatusClasses(status.id)}`}
+                >
+                  {status.name}
+                </button>
+              ))}
             </div>
           </div>
         </div>
