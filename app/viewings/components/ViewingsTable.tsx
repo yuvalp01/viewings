@@ -1685,9 +1685,6 @@ export default function ViewingsTable({
                 <div className="px-4 py-3 border-t border-zinc-200 bg-zinc-50/50 dark:border-zinc-800 dark:bg-zinc-800/30 space-y-3">
                   {/* Property Details */}
                   <div>
-                    <h4 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-2 uppercase tracking-wide">
-                      Property Details
-                    </h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-zinc-600 dark:text-zinc-400">Bedrooms</span>
@@ -1739,9 +1736,6 @@ export default function ViewingsTable({
 
                   {/* Financial Details */}
                   <div>
-                    <h4 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-2 uppercase tracking-wide">
-                      Financial Details
-                    </h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-zinc-600 dark:text-zinc-400">Extra Expenses</span>
