@@ -57,6 +57,8 @@ export default function TotalCostModal({
     const findingTenant = rent;
     const ysFee = Math.max(price * 0.038, 3800) + 500;
     const agentFee = Math.max(price * 0.0248, 2480);
+    const engineerCheck = 200;
+    const poaTranslations = 200;
 
     return [
       { label: "Purchase tax", amount: purchaseTax },
@@ -66,6 +68,8 @@ export default function TotalCostModal({
       { label: "Finding tenant", amount: findingTenant },
       { label: "Y&S fee", amount: ysFee },
       { label: "Agent fee", amount: agentFee },
+      { label: "Engineer check", amount: engineerCheck },
+      { label: "POA + translations", amount: poaTranslations },
     ];
   };
 

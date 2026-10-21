@@ -13,7 +13,8 @@ datasource db {
 
 model Stakeholder {
   id        Int     @id @default(autoincrement())
-  name      String  @db.NVarChar(255)
+  name      String? @db.NVarChar(255)
+  nameHe    String? @map("Name_he") @db.NVarChar(255)
   type      Int?    @map("Type")
   isDeleted Boolean @default(false) @map("IsDeleted")
 

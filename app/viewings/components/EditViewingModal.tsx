@@ -7,7 +7,7 @@ import Button from "@/app/components/Button";
 
 interface Stakeholder {
   id: number;
-  name: string;
+  name: string | null;
 }
 
 interface Viewing {

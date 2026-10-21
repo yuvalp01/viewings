@@ -6,8 +6,13 @@ import { XIcon, BriefcaseIcon, UserSearchIcon, LightBulbIcon, BadgeIcon } from "
 
 interface Stakeholder {
   id: number;
-  name: string;
+  name: string | null;
+  nameHe: string | null;
   type: number | null;
+}
+
+function stakeholderDisplayName(stakeholder: Stakeholder): string {
+  return stakeholder.name ?? stakeholder.nameHe ?? "";
 }
 
 interface Viewing {
@@ -114,7 +119,7 @@ export default function VisibilityModal({
 
   // Filter stakeholders based on search query AND selected types
   const filteredStakeholders = stakeholders.filter((stakeholder) => {
-    const matchesSearch = stakeholder.name
+    const matchesSearch = stakeholderDisplayName(stakeholder)
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     const matchesType =
@@ -411,7 +416,7 @@ export default function VisibilityModal({
                           className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-2 focus:ring-zinc-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800"
                         />
                         <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                          {stakeholder.name}
+                          {stakeholderDisplayName(stakeholder)}
                         </span>
                       </label>
                     );

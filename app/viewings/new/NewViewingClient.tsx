@@ -8,7 +8,7 @@ import { ArrowLeftIcon } from "@/app/components/icons";
 
 interface Stakeholder {
   id: number;
-  name: string;
+  name: string | null;
 }
 
 interface NewViewingClientProps {

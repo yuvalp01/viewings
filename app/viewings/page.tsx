@@ -174,6 +174,7 @@ export default async function ViewingsPage(props: ViewingsPageProps) {
     select: {
       id: true,
       name: true,
+      nameHe: true,
       type: true,
     },
   });

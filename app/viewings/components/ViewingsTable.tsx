@@ -23,8 +23,12 @@ import {
 
 interface Stakeholder {
   id: number;
-  name: string;
+  name: string | null;
   type: number | null;
+}
+
+interface VisibilityStakeholder extends Stakeholder {
+  nameHe: string | null;
 }
 
 interface QualityLevel {
@@ -81,7 +85,7 @@ interface Viewing {
 interface ViewingsTableProps {
   viewings: Viewing[];
   stakeholders: Stakeholder[]; // For agent selection in EditViewingModal
-  allStakeholders: Stakeholder[]; // For visibility management
+  allStakeholders: VisibilityStakeholder[]; // For visibility management
   scheduleStakeholders: Stakeholder[];
   qualityLevels: QualityLevel[];
   extras: ViewingExtra[];
@@ -162,8 +166,19 @@ function calculateTotalCost(viewing: Viewing, extraItemsTotal: number): number {
   const findingTenant = rent;
   const ysFee = Math.max(price * 0.038, 3800) + 500;
   const agentFee = Math.max(price * 0.0248, 2480);
-  
-  const firstSubtotal = purchaseTax + lawyerFee + notaryFee + registrationFee + findingTenant + ysFee + agentFee;
+  const engineerCheck = 200;
+  const poaTranslations = 200;
+
+  const firstSubtotal =
+    purchaseTax +
+    lawyerFee +
+    notaryFee +
+    registrationFee +
+    findingTenant +
+    ysFee +
+    agentFee +
+    engineerCheck +
+    poaTranslations;
   const secondSubtotal = extraItemsTotal;
   const third = price;
   
@@ -1025,7 +1040,7 @@ export default function ViewingsTable({
       }
       case "agent":
         return viewing.agentStakeholder ? (
-          <span className="truncate" title={viewing.agentStakeholder.name}>{viewing.agentStakeholder.name}</span>
+          <span className="truncate" title={viewing.agentStakeholder.name ?? undefined}>{viewing.agentStakeholder.name}</span>
         ) : (
           <span className="text-zinc-300 dark:text-zinc-700">-</span>
         );
@@ -1510,7 +1525,7 @@ export default function ViewingsTable({
                       <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">Agent</div>
                       <div className="text-sm text-zinc-900 dark:text-zinc-50">
                         {viewing.agentStakeholder ? (
-                          <span title={viewing.agentStakeholder.name}>
+                          <span title={viewing.agentStakeholder.name ?? undefined}>
                             {viewing.agentStakeholder.name}
                           </span>
                         ) : (
